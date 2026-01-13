@@ -1,18 +1,44 @@
-# 📚 Lectio
 
-Une alternative open source aux plateformes comme Glose - Plateforme de lecture collaborative
 
-## 🚀 Fonctionnalités
+Une alternative open source à la défunte plateforme Glose Education
 
-- **Lecteurs intégrés** : Support EPUB et PDF avec interface moderne
-- **Annotations collaboratives** : Système d'annotations avec synchronisation Hypothesis.is
-- **Gestion des groupes** : Création et gestion de groupes de lecture
-- **Interface d'administration** : Panneau complet pour la gestion des utilisateurs, livres et groupes
-- **Authentification sécurisée** : Auth.js v5 avec support multi-providers
-- **Design minimal** : Système de design Lectio (noir/blanc/gris)
-- **Responsive** : Interface adaptée mobile et desktop
+# La lecture Sociale (social reading)
 
-## 🛠️ Stack Technique
+La lecture sociale (social Reading) tire pleinement parti de la nature dématérialisée des livres electroniques: la lecture continue d'être cette activité d'introsepction solitaire qui fait tout son interêt tout en bénéficiant des avantages de la mise en réseau. Lire seuls mais ensemble.
+Concrètement, le lecteur d’un roman peut d’annoter d’un simple clic dans la marge, l’ensemble de ces notes étant visibles aux autres membres du groupe de lecture et pouvant faire l’objet de fils de discussion.
+
+# La lecture sociale dans le cadre de l'éducation
+
+La maitrise de l'expression écrite tient une place fondamentale dans l'éducation. Surtout en france ou presque tous les examens, écrits et oraux, relevent de la dissertation. 
+D'une autre coté, toutes les recherches en sociologie de l'éducation depuis soixante ans insistent sur le role  déterminant de la socialisation à la lecture, qui se fait tres inégalement selon l'origine sociale et des inégalités qui se en découlent.
+
+Or, les contraintes de la classe telle qu'elle est organisée ne permettent pas d'y rémedier. Paradoxalement, au delà de quelques textes épars la lecture personelle, riche, permettant une re-appropriation est pratiquement absente. En outre, l'environnement contemporain réduit encore cette possibilité. D'une part, les pratiques de lecture, concurrencées par l'offre de divertissements est en baisse accelerée. D'autre part,  Ainsi, faute de pouvoir accompagner les eleves dans les taches de lecture à la maison, les livres sont de moins en moins lus et de plus en plus rédigés par des chatbot IA.
+
+Palimpeste.education vise à réduire cette contradiction en :
+
+- ** Socialisant la lecture ** : en lisant à plusieurs, en pouvant partager, donner leurs avis, sur leur téléphone, la pratique de la lecture se rapproche des pratiques existants
+- ** Permettant l'accompagnement : les éléves à la maison ne sont plus livrés à eux même, et peuvent être accompagnés
+- ** Insistant sur le processus : se focaliser sur le processus de lecture et d'annotation plutot que de se centrer sur la tache matérielle à rendre.
+
+
+## Fonctionnalités
+
+- Creation de classe
+- invitation d'eleves avec code personnel
+- Upload de livre
+- Création de groupe de lecture
+- Statistiques de lecture individuelle, de la classe
+- annotations des phrases
+- Fils de centralisation des commentaires
+
+## A venir
+
+Quelques fonctionnalités complémentaires dans le futur
+
+- IA : permettrait d'accompagner le lecteur dans l'analyse du livre au cours de la lecture et de réaliser une synthese de l'interaction aupres du professeur
+- Ludification : mesurer le progrès et créer de l'émulation à travers l'octroi de "badges" transportables en ligne ou IRL.
+
+##  Stack Technique
 
 - **Frontend** : Next.js 15 (App Router), React 19, TypeScript
 - **Backend** : Next.js API Routes, Prisma ORM
@@ -23,193 +49,10 @@ Une alternative open source aux plateformes comme Glose - Plateforme de lecture 
 - **Styles** : Tailwind CSS, CSS Variables
 - **Déploiement** : Docker, Docker Compose
 
-## 📋 Prérequis
-
-- Node.js 20+
-- PostgreSQL 14+
-- Docker (optionnel, pour déploiement)
-
-## 🏃‍♂️ Installation
-
-### Développement Local
-
-```bash
-# Cloner le projet
-git clone https://github.com/votre-username/lectio-app.git
-cd lectio-app
-
-# Installer les dépendances
-npm install
-
-# Configurer les variables d'environnement
-cp .env.local.example .env.local
-# Éditer .env.local avec vos configurations
-
-# Configurer la base de données
-npx prisma generate
-npx prisma db push
-
-# Populer avec des données de test
-npm run db:seed
-
-# Lancer en mode développement
-npm run dev
-```
-
-### Déploiement Docker
-
-```bash
-# Lancer avec Docker Compose
-docker-compose up -d
-
-# Ou pour la production avec Nginx
-docker-compose --profile production up -d
-```
-
-## 🔧 Configuration
-
-### Variables d'environnement
-
-```env
-# Base de données
-DATABASE_URL="postgresql://username:password@localhost:5432/lectio_db"
-
-# Authentification
-NEXTAUTH_SECRET="your-super-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Hypothesis API (optionnel)
-HYPOTHESIS_API_KEY="your-hypothesis-api-key"
-```
-
-### Configuration PostgreSQL pour Unraid
-
-```env
-DATABASE_URL="postgresql://username:password@unraid-server-ip:5432/lectio_db"
-```
-
-## 👥 Comptes par défaut
-
-Après l'exécution du seed :
-
-- **Admin** : `admin@lectio.local` / `admin123`
-- **Lecteur** : `reader@lectio.local` / `reader123`
-
-## 📖 Utilisation
-
-### Interface Utilisateur
-
-1. **Connexion** : `/auth/signin`
-2. **Tableau de bord** : `/`
-3. **Lecteur EPUB** : `/reader/basic`
-4. **Lecteur PDF** : `/reader/advanced`
-5. **Annotations** : `/annotations`
-
-### Interface Admin
-
-1. **Panneau admin** : `/admin`
-2. **Gestion utilisateurs** : `/admin/users`
-3. **Gestion livres** : `/admin/books`
-4. **Gestion groupes** : `/admin/groups`
-
-### API Routes
-
-- `GET/POST /api/annotations` - Gestion des annotations
-- `POST /api/auth/[...nextauth]` - Authentification
-- Plus d'endpoints à venir...
-
-## 🎨 Design System
-
-Lectio utilise un système de design minimal avec des variables CSS :
-
-```css
-:root {
-  --lectio-white: #ffffff;
-  --lectio-gray-50: #f9f9f9;
-  --lectio-gray-900: #171717;
-  --lectio-black: #000000;
-  /* ... */
-}
-```
-
-## 🔌 Intégrations
-
-### Hypothesis.is
-
-Synchronisation automatique des annotations avec l'API Hypothesis :
-
-```typescript
-// Configuration dans .env.local
-HYPOTHESIS_API_KEY="your-api-key"
-
-// Usage automatique lors de la création d'annotations
-```
-
-## 🐳 Docker
-
-### Image de production
-
-```dockerfile
-# Build l'image
-docker build -t lectio-app .
-
-# Lancer le container
-docker run -p 3000:3000 lectio-app
-```
-
-### Docker Compose complet
-
-```yaml
-version: '3.8'
-services:
-  lectio-app:
-    build: .
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-  db:
-    image: postgres:16-alpine
-    # ... configuration
-```
-
-## 🚀 Déploiement sur OVH
-
-1. **Serveur VPS/Dedicated** :
-   ```bash
-   # Installer Docker
-   curl -fsSL https://get.docker.com -o get-docker.sh
-   sh get-docker.sh
-   
-   # Cloner et déployer
-   git clone https://github.com/votre-username/lectio-app.git
-   cd lectio-app
-   docker-compose --profile production up -d
-   ```
-
-2. **Configuration Nginx** (incluse dans docker-compose)
-
-3. **SSL Certificate** : Let's Encrypt recommandé
 
 ## 🤝 Contribution
 
-1. Fork le projet
-2. Créer une branche (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. Commit vos changements (`git commit -am 'Ajouter nouvelle fonctionnalité'`)
-4. Push sur la branche (`git push origin feature/nouvelle-fonctionnalite`)
-5. Créer une Pull Request
 
 ## 📄 Licence
 
 MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-## 🙏 Remerciements
-
-- Inspiré par Glose et autres plateformes de lecture sociale
-- Utilise EPUB.js et PDF.js pour les lecteurs
-- Intégration Hypothesis.is pour les annotations
-- Design system minimal et fonctionnel
-
----
-
-**Lectio** - Une plateforme de lecture collaborative open source 📚
