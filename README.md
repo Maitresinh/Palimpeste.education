@@ -4,11 +4,8 @@
 autour des textes.  Ce dépôt est **public** et accepte des contributions dans le cadre d'une licence ouverte pour l'éducation.
 
 ### Architecture du projet
-- **Conpagina (core)** : privé, non publié
 - **Conpagina Éducation** : public (ce dépôt)
-- **Conpagina** : privé, services commerciaux
-
-Ce dépôt dépend du cœur Conpagina, mais **n’en contient pas le code**.
+- **Conpagina** : privé
 
 ### Licence
 Apache License 2.0 – voir `LICENSE` et `NOTICE`.
@@ -25,10 +22,7 @@ This repository is **public** and open to contributions.
 
 ### Project structure
 - **Conpagina (core)**: private, not published
-- **Conpagina Education**: public (this repository)
-- **Conpagina**: private, commercial services
-
-This repository depends on the Conpagina core but does **not** include it.
+- **Conpagina**: private, 
 
 ### License
 Apache License 2.0 – see `LICENSE` and `NOTICE`.
