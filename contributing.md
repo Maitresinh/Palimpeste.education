@@ -28,7 +28,7 @@ git commit -s -m "Message"
 
 Thank you for your interest in Conpagina Education.
 
-##Contribution license
+### Contribution license
 
 This project is licensed under the Apache License 2.0.
 
