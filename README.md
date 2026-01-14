@@ -49,11 +49,12 @@ Or, les contraintes de la classe telle qu'elle est organisée ne permettent pas 
 
 - ✅ Création de classes
 - ✅ Invitation d'élèves avec code personnel
-- ✅ Upload de livres (EPUB, PDF)
+- ✅ Upload de livres (EPUB)
 - ✅ Création de groupes de lecture
 - ✅ Statistiques de lecture individuelle et de classe
 - ✅ Annotations des phrases
 - ✅ Fils de discussion centralisés pour les commentaires
+- ✅ Pannel d'administration
 
 ### 🚀 À venir
 
@@ -262,11 +263,13 @@ However, the constraints of the classroom as currently organized do not allow fo
 
 - ✅ Class creation
 - ✅ Student invitation with personal codes
-- ✅ Book upload (EPUB, PDF)
+- ✅ Book upload (EPUB)
 - ✅ Reading group creation
 - ✅ Individual and class reading statistics
 - ✅ Sentence annotations
 - ✅ Centralized discussion threads for comments
+- ✅ Administration panel
+
 
 ### 🚀 Coming Soon
 
