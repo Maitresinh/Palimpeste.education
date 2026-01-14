@@ -1,0 +1,93 @@
+/* Styles pour les surlignages dans l'EPUB */
+
+/* Style de base pour les surlignages */
+.annotation-highlight {
+  cursor: pointer !important;
+  transition: all 0.15s ease;
+  border-radius: 2px;
+  padding: 2px 0;
+  position: relative;
+}
+
+/* Effet hover sur les surlignages */
+.annotation-highlight:hover {
+  opacity: 0.95 !important;
+  filter: brightness(0.9);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+  transform: scale(1.005);
+}
+
+/* Indication visuelle qu'on peut cliquer */
+.annotation-highlight::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 0;
+  border-color: transparent rgba(99, 102, 241, 0.6) transparent transparent;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.annotation-highlight:hover::after {
+  opacity: 1;
+}
+
+/* Animation au survol */
+@keyframes highlight-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.01);
+  }
+}
+
+.annotation-highlight:active {
+  animation: highlight-pulse 0.3s ease;
+}
+
+/* Sélection de texte personnalisée */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+/* Mobile paginated: reduce reader margins for more reading space */
+@media (max-width: 767px) {
+  /* Target react-reader container wrapper */
+  .ReactReader {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+  
+  /* Target epub.js container if accessible */
+  .epub-container {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+  
+  /* Hide navigation arrows on mobile for more space */
+  .ReactReader button[aria-label*="prev"],
+  .ReactReader button[aria-label*="next"] {
+    width: 32px !important;
+    min-width: 32px !important;
+  }
+}
+
+/* Mobile scroll mode: no margins at all */
+@media (max-width: 767px) {
+  /* When in scroll mode, remove all padding */
+  [data-scroll-mode="true"] .ReactReader,
+  [data-scroll-mode="true"] .epub-container,
+  .scroll-mode .ReactReader,
+  .scroll-mode .epub-container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+

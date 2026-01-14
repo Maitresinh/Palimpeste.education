@@ -1,0 +1,1 @@
+ALTER TABLE "annotation" ADD COLUMN "is_group_visible" text DEFAULT 'false' NOT NULL;

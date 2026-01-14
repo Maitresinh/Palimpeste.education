@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retour imminent – Conpagina</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            padding: 24px;
+        }
+
+        .page {
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .logo {
+            margin-bottom: 48px;
+        }
+
+        .logo img {
+            height: 200px;
+            width: auto;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #18181b;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 15px;
+            color: #71717a;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #d4d4d8;
+            border-radius: 50%;
+            animation: pulse 1.4s ease-in-out infinite;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            80%,
+            100% {
+                background: #d4d4d8;
+                transform: scale(1);
+            }
+
+            40% {
+                background: #6366f1;
+                transform: scale(1.1);
+            }
+        }
+
+        .footer {
+            margin-top: 64px;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+    </style>
+    <script>
+        setTimeout(() => window.location.reload(), 15000);
+    </script>
+</head>
+
+<body>
+    <div class="page">
+        <div class="logo">
+            <img src="logo_conpagina.png" alt="Conpagina">
+        </div>
+
+        <h1>On revient tout de suite</h1>
+        <p>Une mise à jour est en cours d'installation. Ça ne prendra qu'un instant.</p>
+
+        <div class="dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <div class="footer">Actualisation automatique dans quelques secondes</div>
+    </div>
+</body>
+
+</html>

@@ -1,55 +1,77 @@
-# Dockerfile for Lectio - Next.js 15 Full-Stack Application
-FROM node:20-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Base stage avec Bun
+FROM oven/bun:1.3.5 AS base
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Rebuild the source code only when needed
+# Builder stage - installe et build tout
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+# Désactiver la télémétrie Next.js
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copier tout le projet
 COPY . .
 
-# Environment variables for build
-ENV NEXT_TELEMETRY_DISABLED 1
+# Supprimer le lockfile et la config bun pour éviter les conflits et forcer une installation propre
+RUN rm -f bun.lock bunfig.toml
 
-# Generate Prisma client
-RUN npx prisma generate
+# Installer les dépendances
+RUN bun install --verbose
 
-# Build application
-RUN npm run build
+# Build du serveur (pour générer les types et vérifier que tout est là)
+WORKDIR /app/apps/server
+# On ne build pas vraiment car on utilise ts-node/bun run, mais on s'assure que les deps sont là
+RUN bun install --verbose
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Build du web
+ARG NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3001
+ENV NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+
+WORKDIR /app/apps/web
+# Limiter la mémoire pour le build (optimisé pour VM avec RAM limitée)
+ENV NODE_OPTIONS="--max-old-space-size=512"
+RUN bun run build
+
+# Server production image
+FROM base AS server
 WORKDIR /app
+ENV NODE_ENV=production
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/server/src ./apps/server/src
+COPY --from=builder /app/apps/server/package.json ./apps/server/
+COPY --from=builder /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/packages/db/drizzle.config.ts ./packages/db/
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN mkdir -p /app/apps/server/uploads
 
-COPY --from=builder /app/public ./public
-
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
+WORKDIR /app/apps/server
 EXPOSE 3000
+CMD ["sh", "-c", "cd /app/packages/db && bun run db:push && cd /app/apps/server && bun run src/index.ts"]
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+# Web production image
+FROM base AS web
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-CMD ["node", "server.js"]
+# Copier les node_modules depuis le builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
+
+COPY --from=builder /app/apps/web/.next ./apps/web/.next
+COPY --from=builder /app/apps/web/package.json ./apps/web/
+COPY --from=builder /app/apps/web/next.config.ts ./apps/web/
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/package.json ./
+
+WORKDIR /app/apps/web
+EXPOSE 3001
+# Forcer les variables d'environnement pour le runtime
+ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
+CMD ["bun", "run", "start"]

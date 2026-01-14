@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "group_access_request_user_group_unique" ON "group_access_request" USING btree ("user_id","group_id");

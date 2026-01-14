@@ -1,41 +1,47 @@
 {
-  "name": "lectio-app",
-  "version": "1.0.0",
-  "description": "📚 Lectio - Alternative open source à Glose - Plateforme de lecture collaborative",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+  "name": "lectio",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "dotenv": "^17.2.2",
+      "zod": "^4.1.13",
+      "typescript": "^5",
+      "@types/bun": "^1.3.4",
+      "hono": "^4.8.2",
+      "@trpc/server": "^11.7.2",
+      "better-auth": "^1.4.7",
+      "@trpc/client": "^11.7.2",
+      "@polar-sh/better-auth": "^1.1.3"
+    }
   },
-  "keywords": ["lectio", "glose", "epub", "pdf", "collaborative", "reading", "annotations"],
-  "author": "Lectio Team",
-  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F @lectio/db db:push",
+    "db:studio": "turbo -F @lectio/db db:studio",
+    "db:generate": "turbo -F @lectio/db db:generate",
+    "db:migrate": "turbo -F @lectio/db db:migrate",
+    "test:polar": "cd apps/server && bun run test-polar.ts",
+    "setup:polar": "cd apps/server && bun run setup-polar.ts"
+  },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.10.0",
-    "@prisma/client": "^6.15.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^24.3.0",
-    "@types/react": "^19.1.11",
-    "@types/react-dom": "^19.1.8",
-    "autoprefixer": "^10.4.21",
-    "bcryptjs": "^3.0.2",
-    "epubjs": "^0.3.93",
-    "next": "^15.5.2",
-    "next-auth": "^5.0.0-beta.29",
-    "pdfjs-dist": "^5.4.54",
-    "postcss": "^8.5.6",
-    "prisma": "^6.15.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "tailwindcss": "^4.1.12",
-    "typescript": "^5.9.2"
+    "@radix-ui/react-slider": "^1.3.6",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "tsx": "^4.7.1"
-  }
+    "turbo": "^2.6.3",
+    "typescript": "catalog:",
+    "@types/bun": "catalog:"
+  },
+  "packageManager": "bun@1.3.5"
 }
