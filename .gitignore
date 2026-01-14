@@ -1,63 +1,84 @@
 # Dependencies
-/node_modules
-/.pnp
+node_modules
+.pnp
 .pnp.js
 
-# Testing
-/coverage
+# Build outputs
+dist
+build
+*.tsbuildinfo
 
-# Next.js
-/.next/
-/out/
-
-# Production
-/build
-
-# Misc
-.DS_Store
-*.tgz
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Local env files
+# Environment variables
 .env
 .env*.local
 
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
-
-# Prisma
-/prisma/migrations/dev.db*
-
-# IDE
-.vscode/
-.idea/
+# IDEs and editors
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
-Thumbs.db
 
 # Logs
 logs
 *.log
-pids
-*.pid
-*.seed
-*.pid.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# Uploads
-/uploads/*
-!/uploads/.gitkeep
+# Turbo
+.turbo
 
-# Books
-/public/books/*
-!/public/books/.gitkeep
+# Better-T-Stack
+.alchemy
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+*.tgz
+.cache
+tmp
+temp
+
+# Uploads (EPUB files)
+apps/server/uploads
+*.epub
+
+# Deployment & Server Configuration
+apache-lectio.conf
+*.conf.local
+/nginx
+/nginx/ssl
+/nginx/certbot
+deploy.sh
+maintenance-on.sh
+maintenance-off.sh
+*.sh.local
+
+# Database backups
+backup_*.sql
+*.dump
+*.backup
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Environment files (all variants)
+.env.*
+!.env.production.example
+!.env.example
+
+# Scripts personnalisés
+scripts/*.local.sh
