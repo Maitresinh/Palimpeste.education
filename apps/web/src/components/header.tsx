@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Home, LayoutDashboard } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useReaderContext } from "@/contexts/reader-context";
@@ -13,8 +14,8 @@ export default function Header() {
   const pathname = usePathname();
   const { isHeaderVisible, isReaderPage } = useReaderContext();
   const links = [
-    { to: "/", label: "Home" },
-    { to: "/dashboard", label: "Dashboard" },
+    { to: "/", label: "Home", icon: Home },
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ] as const;
 
   const isActive = (path: string) => {
@@ -40,20 +41,21 @@ export default function Header() {
               </div>
             </Link>
             <nav className="flex gap-1">
-              {links.map(({ to, label }) => {
+              {links.map(({ to, label, icon: Icon }) => {
                 const active = isActive(to);
                 return (
                   <Link
                     key={to}
                     href={to}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                      "px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2",
                       active
                         ? "bg-muted text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
-                    {label}
+                    <Icon className="h-4 w-4 sm:hidden" />
+                    <span className="hidden sm:inline">{label}</span>
                   </Link>
                 );
               })}
@@ -81,20 +83,21 @@ export default function Header() {
             </div>
           </Link>
           <nav className="flex gap-1">
-            {links.map(({ to, label }) => {
+            {links.map(({ to, label, icon: Icon }) => {
               const active = isActive(to);
               return (
                 <Link
                   key={to}
                   href={to}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2",
                     active
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
-                  {label}
+                  <Icon className="h-4 w-4 sm:hidden" />
+                  <span className="hidden sm:inline">{label}</span>
                 </Link>
               );
             })}
