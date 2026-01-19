@@ -1,11 +1,32 @@
-import Link from "next/link";
+"use client";
 
-export const metadata = {
-    title: "Mentions Légales - Conpagina",
-    description: "Mentions légales et informations juridiques",
-};
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LegalPage() {
+    const { data: legal, isLoading } = useQuery(trpc.site.getLegalConfig.queryOptions());
+    const { data: site } = useQuery(trpc.site.getPublicConfig.queryOptions());
+
+    if (isLoading) {
+        return (
+            <div className="max-w-3xl mx-auto px-4 py-8">
+                <Skeleton className="h-10 w-64 mb-6" />
+                <Skeleton className="h-4 w-full mb-8" />
+                <div className="space-y-8">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i}>
+                            <Skeleton className="h-6 w-48 mb-4" />
+                            <Skeleton className="h-4 w-full mb-2" />
+                            <Skeleton className="h-4 w-3/4" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-3xl mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-6">Mentions Légales</h1>
@@ -18,22 +39,25 @@ export default function LegalPage() {
             <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">1. Éditeur du site</h2>
                 <div className="text-muted-foreground space-y-2">
-                    {/* TODO: Personnaliser avec les vraies informations */}
-
-                    <p><strong>Nom / Raison sociale :</strong> Editeur des confins de l'imaginaire - Association loi 1901</p>
-                    <p><strong>Adresse :</strong> 740 ch du neplier 38380 St Laurent du pont</p>
-                    <p><strong>Téléphone :</strong> 0033 (0)768592250</p>
-                    <p><strong>Directeur de la publication :</strong>Philippe Dapelo</p>
+                    <p><strong>Nom / Raison sociale :</strong> {legal?.companyName} - {legal?.companyType}</p>
+                    <p><strong>Adresse :</strong> {legal?.address}</p>
+                    <p><strong>Téléphone :</strong> {legal?.phone}</p>
+                    <p><strong>Email :</strong> {legal?.email}</p>
+                    <p><strong>Directeur de la publication :</strong> {legal?.director}</p>
                 </div>
             </section>
 
             <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">2. Hébergeur</h2>
                 <div className="text-muted-foreground space-y-2">
-                    <p><strong>Nom :</strong> OVH SAS</p>
-                    <p><strong>Adresse :</strong> 2 rue Kellermann, 59100 Roubaix, France</p>
-                    <p><strong>Téléphone :</strong> 1007 (depuis la France) / +33 9 72 10 10 07 (international)</p>
-                    <p><strong>Site web :</strong> <a href="https://www.ovh.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">www.ovh.com</a></p>
+                    <p><strong>Nom :</strong> {legal?.hostName}</p>
+                    <p><strong>Adresse :</strong> {legal?.hostAddress}</p>
+                    <p><strong>Téléphone :</strong> {legal?.hostPhone}</p>
+                    <p><strong>Site web :</strong>{" "}
+                        <a href={legal?.hostWebsite} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                            {legal?.hostWebsite}
+                        </a>
+                    </p>
                 </div>
             </section>
 
@@ -73,7 +97,7 @@ export default function LegalPage() {
                 <p className="text-muted-foreground">
                     Pour toute information concernant le traitement de vos données personnelles,
                     veuillez consulter notre{" "}
-                    <Link href={"/privacy" as any} className="text-primary hover:underline">
+                    <Link href="/privacy" className="text-primary hover:underline">
                         Politique de Confidentialité
                     </Link>.
                 </p>

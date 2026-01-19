@@ -1,11 +1,32 @@
-import Link from "next/link";
+"use client";
 
-export const metadata = {
-    title: "Politique de Confidentialité - Conpagina",
-    description: "Politique de confidentialité et protection des données personnelles",
-};
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PrivacyPage() {
+    const { data: legal, isLoading } = useQuery(trpc.site.getLegalConfig.queryOptions());
+    const { data: site } = useQuery(trpc.site.getPublicConfig.queryOptions());
+
+    if (isLoading) {
+        return (
+            <div className="max-w-3xl mx-auto px-4 py-8">
+                <Skeleton className="h-10 w-80 mb-6" />
+                <Skeleton className="h-4 w-48 mb-8" />
+                <div className="space-y-8">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i}>
+                            <Skeleton className="h-6 w-56 mb-4" />
+                            <Skeleton className="h-4 w-full mb-2" />
+                            <Skeleton className="h-4 w-5/6" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-3xl mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-6">Politique de Confidentialité</h1>
@@ -17,17 +38,19 @@ export default function PrivacyPage() {
             <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">1. Responsable du traitement</h2>
                 <p className="text-muted-foreground">
-                    {/* TODO: Personnaliser avec les vraies informations */}
-                    Le responsable du traitement des données est Editeur des confins de l'imaginaire,
-                    situé à 740 ch du neplier 38380 St Laurent du pont. Pour toute question relative à vos données personnelles,
-                    vous pouvez nous contacter à pdapelo@gmail.com.
+                    Le responsable du traitement des données est {legal?.companyName},
+                    situé à {legal?.address}. Pour toute question relative à vos données personnelles,
+                    vous pouvez nous contacter à{" "}
+                    <a href={`mailto:${legal?.contactEmail}`} className="text-primary hover:underline">
+                        {legal?.contactEmail}
+                    </a>.
                 </p>
             </section>
 
             <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">2. Données collectées</h2>
                 <p className="text-muted-foreground mb-4">
-                    Dans le cadre de l'utilisation de Conpagina, nous collectons les données suivantes :
+                    Dans le cadre de l'utilisation de {site?.siteName}, nous collectons les données suivantes :
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground space-y-2">
                     <li><strong>Données d'identification :</strong> nom, adresse email</li>
@@ -85,7 +108,10 @@ export default function PrivacyPage() {
                     <li><strong>Droit à la limitation :</strong> limiter le traitement de vos données</li>
                 </ul>
                 <p className="text-muted-foreground mt-4">
-                    Pour exercer ces droits, contactez-nous à [email@example.com].
+                    Pour exercer ces droits, contactez-nous à{" "}
+                    <a href={`mailto:${legal?.contactEmail}`} className="text-primary hover:underline">
+                        {legal?.contactEmail}
+                    </a>.
                 </p>
             </section>
 
@@ -106,8 +132,12 @@ export default function PrivacyPage() {
                     vous pouvez nous contacter :
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-4">
-                    <li>Par email : [email@example.com]</li>
-                    <li>Par courrier : [Adresse postale]</li>
+                    <li>Par email :{" "}
+                        <a href={`mailto:${legal?.contactEmail}`} className="text-primary hover:underline">
+                            {legal?.contactEmail}
+                        </a>
+                    </li>
+                    <li>Par courrier : {legal?.address}</li>
                 </ul>
                 <p className="text-muted-foreground mt-4">
                     Vous avez également le droit d'introduire une réclamation auprès de la CNIL

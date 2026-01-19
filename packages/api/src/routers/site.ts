@@ -8,6 +8,7 @@ import { publicProcedure, adminProcedure, router } from "../index";
 
 // Clés de configuration du site
 export const SITE_CONFIG_KEYS = {
+    // Apparence
     SITE_NAME: "site_name",
     SITE_LOGO: "site_logo",
     SITE_LOGO_INVERT: "site_logo_invert",
@@ -16,6 +17,33 @@ export const SITE_CONFIG_KEYS = {
     SITE_SUBTITLE: "site_subtitle",
     CTA_TITLE: "cta_title",
     CTA_DESCRIPTION: "cta_description",
+    // Homepage features (JSON array of enabled feature keys)
+    HOMEPAGE_FEATURES: "homepage_features",
+    // Informations légales - Impressum
+    LEGAL_COMPANY_NAME: "legal_company_name",
+    LEGAL_COMPANY_TYPE: "legal_company_type",
+    LEGAL_ADDRESS: "legal_address",
+    LEGAL_PHONE: "legal_phone",
+    LEGAL_EMAIL: "legal_email",
+    LEGAL_DIRECTOR: "legal_director",
+    // Hébergeur
+    LEGAL_HOST_NAME: "legal_host_name",
+    LEGAL_HOST_ADDRESS: "legal_host_address",
+    LEGAL_HOST_PHONE: "legal_host_phone",
+    LEGAL_HOST_WEBSITE: "legal_host_website",
+    // Contact
+    CONTACT_EMAIL: "contact_email",
+    CONTACT_SUPPORT_EMAIL: "contact_support_email",
+} as const;
+
+// Features disponibles pour la homepage
+export const HOMEPAGE_FEATURE_KEYS = {
+    EPUB: "epub",
+    ANNOTATIONS: "annotations",
+    DISCUSSIONS: "discussions",
+    GROUPS: "groups",
+    PROGRESS: "progress",
+    CUSTOMIZATION: "customization",
 } as const;
 
 // Valeurs par défaut
@@ -28,27 +56,46 @@ const DEFAULT_CONFIG: Record<string, string> = {
     [SITE_CONFIG_KEYS.SITE_SUBTITLE]: "Lisez, annotez et discutez ensemble.",
     [SITE_CONFIG_KEYS.CTA_TITLE]: "Prêt à commencer ?",
     [SITE_CONFIG_KEYS.CTA_DESCRIPTION]: "Créez votre compte gratuitement et commencez à lire.",
+    // Features par défaut (tous activés)
+    [SITE_CONFIG_KEYS.HOMEPAGE_FEATURES]: JSON.stringify(Object.values(HOMEPAGE_FEATURE_KEYS)),
+    // Informations légales par défaut
+    [SITE_CONFIG_KEYS.LEGAL_COMPANY_NAME]: "Editeur des confins de l'imaginaire",
+    [SITE_CONFIG_KEYS.LEGAL_COMPANY_TYPE]: "Association loi 1901",
+    [SITE_CONFIG_KEYS.LEGAL_ADDRESS]: "740 ch du neplier 38380 St Laurent du pont",
+    [SITE_CONFIG_KEYS.LEGAL_PHONE]: "0033 (0)768592250",
+    [SITE_CONFIG_KEYS.LEGAL_EMAIL]: "pdapelo@gmail.com",
+    [SITE_CONFIG_KEYS.LEGAL_DIRECTOR]: "Philippe Dapelo",
+    [SITE_CONFIG_KEYS.LEGAL_HOST_NAME]: "OVH SAS",
+    [SITE_CONFIG_KEYS.LEGAL_HOST_ADDRESS]: "2 rue Kellermann, 59100 Roubaix, France",
+    [SITE_CONFIG_KEYS.LEGAL_HOST_PHONE]: "1007",
+    [SITE_CONFIG_KEYS.LEGAL_HOST_WEBSITE]: "https://www.ovh.com",
+    [SITE_CONFIG_KEYS.CONTACT_EMAIL]: "pdapelo@gmail.com",
+    [SITE_CONFIG_KEYS.CONTACT_SUPPORT_EMAIL]: "pdapelo@gmail.com",
 };
+
+// Helper pour récupérer toutes les configs
+async function getConfigMap() {
+    const configs = await db
+        .select()
+        .from(systemConfig)
+        .where(
+            sql`${systemConfig.key} IN (${sql.join(
+                Object.values(SITE_CONFIG_KEYS).map((k) => sql`${k}`),
+                sql`, `
+            )})`
+        );
+
+    const configMap: Record<string, string> = { ...DEFAULT_CONFIG };
+    for (const config of configs) {
+        configMap[config.key] = config.value;
+    }
+    return configMap;
+}
 
 export const siteRouter = router({
     // Récupérer la configuration publique du site
     getPublicConfig: publicProcedure.query(async () => {
-        const configs = await db
-            .select()
-            .from(systemConfig)
-            .where(
-                sql`${systemConfig.key} IN (${sql.join(
-                    Object.values(SITE_CONFIG_KEYS).map((k) => sql`${k}`),
-                    sql`, `
-                )})`
-            );
-
-        // Construire l'objet de configuration avec les valeurs par défaut
-        const configMap: Record<string, string> = { ...DEFAULT_CONFIG };
-
-        for (const config of configs) {
-            configMap[config.key] = config.value;
-        }
+        const configMap = await getConfigMap();
 
         return {
             siteName: configMap[SITE_CONFIG_KEYS.SITE_NAME],
@@ -59,6 +106,27 @@ export const siteRouter = router({
             siteSubtitle: configMap[SITE_CONFIG_KEYS.SITE_SUBTITLE],
             ctaTitle: configMap[SITE_CONFIG_KEYS.CTA_TITLE],
             ctaDescription: configMap[SITE_CONFIG_KEYS.CTA_DESCRIPTION],
+            homepageFeatures: JSON.parse(configMap[SITE_CONFIG_KEYS.HOMEPAGE_FEATURES] || "[]") as string[],
+        };
+    }),
+
+    // Récupérer les informations légales publiques
+    getLegalConfig: publicProcedure.query(async () => {
+        const configMap = await getConfigMap();
+
+        return {
+            companyName: configMap[SITE_CONFIG_KEYS.LEGAL_COMPANY_NAME],
+            companyType: configMap[SITE_CONFIG_KEYS.LEGAL_COMPANY_TYPE],
+            address: configMap[SITE_CONFIG_KEYS.LEGAL_ADDRESS],
+            phone: configMap[SITE_CONFIG_KEYS.LEGAL_PHONE],
+            email: configMap[SITE_CONFIG_KEYS.LEGAL_EMAIL],
+            director: configMap[SITE_CONFIG_KEYS.LEGAL_DIRECTOR],
+            hostName: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_NAME],
+            hostAddress: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_ADDRESS],
+            hostPhone: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_PHONE],
+            hostWebsite: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_WEBSITE],
+            contactEmail: configMap[SITE_CONFIG_KEYS.CONTACT_EMAIL],
+            supportEmail: configMap[SITE_CONFIG_KEYS.CONTACT_SUPPORT_EMAIL],
         };
     }),
 
@@ -66,6 +134,7 @@ export const siteRouter = router({
     updateConfig: adminProcedure
         .input(
             z.object({
+                // Apparence
                 siteName: z.string().min(1).max(100).optional(),
                 siteLogo: z.string().optional(),
                 siteLogoInvert: z.boolean().optional(),
@@ -74,6 +143,8 @@ export const siteRouter = router({
                 siteSubtitle: z.string().max(200).optional(),
                 ctaTitle: z.string().max(100).optional(),
                 ctaDescription: z.string().max(300).optional(),
+                // Homepage features
+                homepageFeatures: z.array(z.string()).optional(),
             })
         )
         .mutation(async ({ input }) => {
@@ -103,6 +174,9 @@ export const siteRouter = router({
             if (input.ctaDescription !== undefined) {
                 updates.push({ key: SITE_CONFIG_KEYS.CTA_DESCRIPTION, value: input.ctaDescription });
             }
+            if (input.homepageFeatures !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.HOMEPAGE_FEATURES, value: JSON.stringify(input.homepageFeatures) });
+            }
 
             // Upsert chaque configuration
             for (const update of updates) {
@@ -123,26 +197,88 @@ export const siteRouter = router({
             return { success: true };
         }),
 
+    // Mettre à jour les informations légales (admin only)
+    updateLegalConfig: adminProcedure
+        .input(
+            z.object({
+                companyName: z.string().max(200).optional(),
+                companyType: z.string().max(100).optional(),
+                address: z.string().max(500).optional(),
+                phone: z.string().max(50).optional(),
+                email: z.string().email().optional(),
+                director: z.string().max(200).optional(),
+                hostName: z.string().max(200).optional(),
+                hostAddress: z.string().max(500).optional(),
+                hostPhone: z.string().max(50).optional(),
+                hostWebsite: z.string().max(200).optional(),
+                contactEmail: z.string().email().optional(),
+                supportEmail: z.string().email().optional(),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const updates: { key: string; value: string }[] = [];
+
+            if (input.companyName !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_COMPANY_NAME, value: input.companyName });
+            }
+            if (input.companyType !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_COMPANY_TYPE, value: input.companyType });
+            }
+            if (input.address !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_ADDRESS, value: input.address });
+            }
+            if (input.phone !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_PHONE, value: input.phone });
+            }
+            if (input.email !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_EMAIL, value: input.email });
+            }
+            if (input.director !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_DIRECTOR, value: input.director });
+            }
+            if (input.hostName !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_HOST_NAME, value: input.hostName });
+            }
+            if (input.hostAddress !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_HOST_ADDRESS, value: input.hostAddress });
+            }
+            if (input.hostPhone !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_HOST_PHONE, value: input.hostPhone });
+            }
+            if (input.hostWebsite !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.LEGAL_HOST_WEBSITE, value: input.hostWebsite });
+            }
+            if (input.contactEmail !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.CONTACT_EMAIL, value: input.contactEmail });
+            }
+            if (input.supportEmail !== undefined) {
+                updates.push({ key: SITE_CONFIG_KEYS.CONTACT_SUPPORT_EMAIL, value: input.supportEmail });
+            }
+
+            for (const update of updates) {
+                await db
+                    .insert(systemConfig)
+                    .values({
+                        key: update.key,
+                        value: update.value,
+                    })
+                    .onConflictDoUpdate({
+                        target: systemConfig.key,
+                        set: {
+                            value: update.value,
+                        },
+                    });
+            }
+
+            return { success: true };
+        }),
+
     // Récupérer toutes les configurations (admin only) - pour le formulaire d'édition
     getAllConfigs: adminProcedure.query(async () => {
-        const configs = await db
-            .select()
-            .from(systemConfig)
-            .where(
-                sql`${systemConfig.key} IN (${sql.join(
-                    Object.values(SITE_CONFIG_KEYS).map((k) => sql`${k}`),
-                    sql`, `
-                )})`
-            );
-
-        // Construire l'objet de configuration avec les valeurs par défaut
-        const configMap: Record<string, string> = { ...DEFAULT_CONFIG };
-
-        for (const config of configs) {
-            configMap[config.key] = config.value;
-        }
+        const configMap = await getConfigMap();
 
         return {
+            // Apparence
             siteName: configMap[SITE_CONFIG_KEYS.SITE_NAME],
             siteLogo: configMap[SITE_CONFIG_KEYS.SITE_LOGO],
             siteLogoInvert: configMap[SITE_CONFIG_KEYS.SITE_LOGO_INVERT] === "true",
@@ -151,6 +287,21 @@ export const siteRouter = router({
             siteSubtitle: configMap[SITE_CONFIG_KEYS.SITE_SUBTITLE],
             ctaTitle: configMap[SITE_CONFIG_KEYS.CTA_TITLE],
             ctaDescription: configMap[SITE_CONFIG_KEYS.CTA_DESCRIPTION],
+            // Homepage features
+            homepageFeatures: JSON.parse(configMap[SITE_CONFIG_KEYS.HOMEPAGE_FEATURES] || "[]") as string[],
+            // Informations légales
+            legalCompanyName: configMap[SITE_CONFIG_KEYS.LEGAL_COMPANY_NAME],
+            legalCompanyType: configMap[SITE_CONFIG_KEYS.LEGAL_COMPANY_TYPE],
+            legalAddress: configMap[SITE_CONFIG_KEYS.LEGAL_ADDRESS],
+            legalPhone: configMap[SITE_CONFIG_KEYS.LEGAL_PHONE],
+            legalEmail: configMap[SITE_CONFIG_KEYS.LEGAL_EMAIL],
+            legalDirector: configMap[SITE_CONFIG_KEYS.LEGAL_DIRECTOR],
+            legalHostName: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_NAME],
+            legalHostAddress: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_ADDRESS],
+            legalHostPhone: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_PHONE],
+            legalHostWebsite: configMap[SITE_CONFIG_KEYS.LEGAL_HOST_WEBSITE],
+            contactEmail: configMap[SITE_CONFIG_KEYS.CONTACT_EMAIL],
+            contactSupportEmail: configMap[SITE_CONFIG_KEYS.CONTACT_SUPPORT_EMAIL],
         };
     }),
 });

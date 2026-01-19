@@ -12,7 +12,11 @@ export interface SiteConfig {
     siteSubtitle: string;
     ctaTitle: string;
     ctaDescription: string;
+    homepageFeatures: string[];
 }
+
+// Toutes les features disponibles par défaut
+const ALL_FEATURES = ["epub", "annotations", "discussions", "groups", "progress", "customization"];
 
 // Valeurs par défaut utilisées pendant le chargement
 const DEFAULT_CONFIG: SiteConfig = {
@@ -24,6 +28,7 @@ const DEFAULT_CONFIG: SiteConfig = {
     siteSubtitle: "Lisez, annotez et discutez ensemble.",
     ctaTitle: "Prêt à commencer ?",
     ctaDescription: "Créez votre compte gratuitement et commencez à lire.",
+    homepageFeatures: ALL_FEATURES,
 };
 
 export function useSiteConfig() {
