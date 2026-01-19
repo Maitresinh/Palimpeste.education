@@ -59,6 +59,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <NavItem href="/admin/teacher-requests" label="Demandes" icon={<GraduationCap className="h-4 w-4" />} />
           <NavItem href="/admin/groups" label="Groupes" icon={<FolderKanban className="h-4 w-4" />} />
           <NavItem href="/admin/activity-logs" label="Activité" icon={<Activity className="h-4 w-4" />} />
+          <NavItem href="/admin/settings" label="Paramètres" icon={<Settings className="h-4 w-4" />} />
         </nav>
       </div>
 
@@ -85,6 +86,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <NavItem href="/admin/teacher-requests" label="Demandes enseignant" icon={<GraduationCap className="h-4 w-4" />} />
               <NavItem href="/admin/groups" label="Groupes" icon={<FolderKanban className="h-4 w-4" />} />
               <NavItem href="/admin/activity-logs" label="Activité" icon={<Activity className="h-4 w-4" />} />
+              <NavItem href="/admin/settings" label="Paramètres" icon={<Settings className="h-4 w-4" />} />
             </nav>
           </div>
         </Card>

@@ -8,6 +8,7 @@ import MyBooks from "@/components/my-books";
 import { Users, BookOpen, MessageSquare, Highlighter, BarChart3, Palette, ArrowRight } from "lucide-react";
 
 import { trpc } from "@/utils/trpc";
+import { useSiteConfig } from "@/hooks/use-site-config";
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -55,6 +56,8 @@ const FEATURES = [
 ];
 
 function LandingPage() {
+  const { config } = useSiteConfig();
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -62,16 +65,17 @@ function LandingPage() {
         <div className="relative inline-block">
           <span className="absolute -top-3 -right-6 bg-black text-white dark:bg-white dark:text-black text-xs font-semibold px-2 py-1 rounded">BETA</span>
           <img
-            src="/logo_conpagina.png"
-            alt="Conpagina"
-            className="h-32 md:h-32 w-auto mb-6 dark:invert"
+            src={config.siteLogo}
+            alt={config.siteName}
+            className={`w-auto mb-6 ${config.siteLogoInvert ? "dark:invert" : ""}`}
+            style={{ height: `${8 * config.siteLogoZoom / 100}rem` }}
           />
         </div>
         <p className="text-lg sm:text-xl text-muted-foreground max-w-xl">
-          Plateforme de lecture collaborative.
+          {config.siteTagline}
         </p>
         <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mb-8">
-          Lisez, annotez et discutez ensemble.
+          {config.siteSubtitle}
         </p>
 
         <div className="flex flex-wrap gap-3 justify-center">
@@ -108,8 +112,8 @@ function LandingPage() {
 
       {/* CTA Final */}
       <section className="px-4 py-16 text-center border-t">
-        <h2 className="text-xl font-semibold mb-4">Prêt à commencer ?</h2>
-        <p className="text-muted-foreground mb-6">Créez votre compte gratuitement et commencez à lire.</p>
+        <h2 className="text-xl font-semibold mb-4">{config.ctaTitle}</h2>
+        <p className="text-muted-foreground mb-6">{config.ctaDescription}</p>
         <Button asChild size="lg">
           <Link href="/login">Créer un compte</Link>
         </Button>
@@ -123,6 +127,7 @@ function LandingPage() {
 function Dashboard() {
   const privateData = useQuery(trpc.privateData.queryOptions());
   const userRole = (privateData.data?.user as any)?.role || "STUDENT";
+  const { config } = useSiteConfig();
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -131,9 +136,10 @@ function Dashboard() {
           <div className="relative inline-block mb-6">
             <span className="absolute -right-4 bg-black text-white dark:bg-white dark:text-black text-[8px] font-semibold px-1.5 py-0.5 rounded z-10">BETA</span>
             <img
-              src="/logo_conpagina.png"
-              alt="Conpagina"
-              className="h-16 md:h-20 w-auto dark:invert"
+              src={config.siteLogo}
+              alt={config.siteName}
+              className={`w-auto ${config.siteLogoInvert ? "dark:invert" : ""}`}
+              style={{ height: `${5 * config.siteLogoZoom / 100}rem` }}
             />
           </div>
         </div>

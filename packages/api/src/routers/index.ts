@@ -6,6 +6,7 @@ import { readingRouter } from "./reading";
 import { sharingRouter } from "./sharing";
 import { notificationsRouter } from "./notifications";
 import { adminRouter } from "./admin";
+import { siteRouter } from "./site";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(() => {
@@ -24,5 +25,6 @@ export const appRouter = router({
   sharing: sharingRouter,
   notifications: notificationsRouter,
   admin: adminRouter,
+  site: siteRouter,
 });
 export type AppRouter = typeof appRouter;

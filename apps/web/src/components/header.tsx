@@ -5,6 +5,7 @@ import { Home, LayoutDashboard } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useReaderContext } from "@/contexts/reader-context";
+import { useSiteConfig } from "@/hooks/use-site-config";
 
 import { ModeToggle } from "./mode-toggle";
 import { NotificationBell } from "./notification-bell";
@@ -13,6 +14,8 @@ import UserMenu from "./user-menu";
 export default function Header() {
   const pathname = usePathname();
   const { isHeaderVisible, isReaderPage } = useReaderContext();
+  const { config } = useSiteConfig();
+
   const links = [
     { to: "/", label: "Home", icon: Home },
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -22,6 +25,10 @@ export default function Header() {
     if (path === "/") return pathname === "/";
     return pathname.startsWith(path);
   };
+
+  // Calculate logo height based on zoom (base: 2rem = 32px)
+  const logoHeight = `${2 * config.siteLogoZoom / 100}rem`;
+  const logoClasses = `w-auto ${config.siteLogoInvert ? "dark:invert" : ""}`;
 
   // On reader pages, animate the header visibility
   if (isReaderPage) {
@@ -37,7 +44,12 @@ export default function Header() {
             <Link href="/">
               <div className="relative">
                 <span className="absolute -top-1 -right-6 z-10 bg-black text-white dark:bg-white dark:text-black text-[8px] font-semibold px-1 py-0.5 rounded">BETA</span>
-                <img src="/logo.png" alt="Conpagina" className="h-8 w-auto dark:invert" />
+                <img
+                  src={config.siteLogo}
+                  alt={config.siteName}
+                  className={logoClasses}
+                  style={{ height: logoHeight }}
+                />
               </div>
             </Link>
             <nav className="flex gap-1">
@@ -79,7 +91,12 @@ export default function Header() {
           <Link href="/">
             <div className="relative">
               <span className="absolute -top-1 -right-4 z-10 bg-black text-white dark:bg-white dark:text-black text-[8px] font-semibold px-1 py-0.5 rounded">BETA</span>
-              <img src="/logo.png" alt="Conpagina" className="h-8 w-auto dark:invert" />
+              <img
+                src={config.siteLogo}
+                alt={config.siteName}
+                className={logoClasses}
+                style={{ height: logoHeight }}
+              />
             </div>
           </Link>
           <nav className="flex gap-1">
@@ -113,3 +130,4 @@ export default function Header() {
     </div>
   );
 }
+

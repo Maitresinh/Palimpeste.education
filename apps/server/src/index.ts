@@ -307,6 +307,112 @@ app.post("/api/upload/epub", async (c) => {
   }
 });
 
+// Endpoint pour uploader une image (logo, etc.) - Admin only
+app.post("/api/upload/image", async (c) => {
+  try {
+    // Vérifier l'authentification
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    // Vérifier que l'utilisateur est admin
+    const [userData] = await db.select({ role: user.role })
+      .from(user)
+      .where(eq(user.id, session.user.id))
+      .limit(1);
+
+    if (!userData || userData.role !== "ADMIN") {
+      return c.json({ error: "Admin access required" }, 403);
+    }
+
+    const formData = await c.req.formData();
+    const file = formData.get("file") as File;
+
+    if (!file) {
+      return c.json({ error: "No file provided" }, 400);
+    }
+
+    // Vérifier le type MIME (images uniquement)
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({ error: "Only image files are allowed (PNG, JPG, GIF, WebP, SVG)" }, 400);
+    }
+
+    // Limite de taille: 5MB
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return c.json({ error: "File too large. Maximum size is 5MB." }, 413);
+    }
+
+    // Créer le dossier uploads/site s'il n'existe pas
+    const uploadsDir = path.join(process.cwd(), "uploads", "site");
+    await mkdir(uploadsDir, { recursive: true });
+
+    // Générer un nom de fichier unique
+    const fileId = crypto.randomUUID();
+    const ext = file.name.split(".").pop() || "png";
+    const filename = `${fileId}.${ext}`;
+    const filepath = path.join(uploadsDir, filename);
+
+    // Sauvegarder le fichier
+    const buffer = await file.arrayBuffer();
+    await writeFile(filepath, Buffer.from(buffer));
+
+    log.info("Image uploaded", { filename, user: session.user.id });
+
+    return c.json({
+      success: true,
+      url: `/api/site-assets/${filename}`,
+      filename,
+    });
+  } catch (error) {
+    log.error("Image upload error", error instanceof Error ? error : new Error(String(error)));
+    return c.json({ error: "Upload failed" }, 500);
+  }
+});
+
+// Servir les fichiers statiques du site (logos, etc.)
+app.get("/api/site-assets/:filename", async (c) => {
+  try {
+    const filename = c.req.param("filename");
+
+    // Protection contre path traversal
+    const filepath = validateFilePath(`uploads/site/${filename}`, "uploads/site");
+    if (!filepath) {
+      return c.json({ error: "Invalid file path" }, 400);
+    }
+
+    const file = Bun.file(filepath);
+    if (!(await file.exists())) {
+      return c.json({ error: "File not found" }, 404);
+    }
+
+    // Déterminer le type MIME
+    let mimeType = "image/png";
+    if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) mimeType = "image/jpeg";
+    else if (filename.endsWith(".gif")) mimeType = "image/gif";
+    else if (filename.endsWith(".webp")) mimeType = "image/webp";
+    else if (filename.endsWith(".svg")) mimeType = "image/svg+xml";
+
+    return new Response(file, {
+      headers: {
+        "Content-Type": mimeType,
+        "Content-Length": file.size.toString(),
+        "Access-Control-Allow-Origin": process.env.CORS_ORIGIN || "",
+        "Access-Control-Allow-Credentials": "true",
+        "Cache-Control": "public, max-age=86400", // Cache 24h
+      },
+    });
+  } catch (error) {
+    log.error("Site asset serve error", error instanceof Error ? error : new Error(String(error)));
+    return c.json({ error: "Failed to serve file" }, 500);
+  }
+});
+
 // Servir les fichiers EPUB
 app.get("/api/files/:fileId", async (c) => {
   try {
