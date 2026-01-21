@@ -3,6 +3,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 
+export interface FeatureText {
+    title: string;
+    description: string;
+}
+
+export interface FeatureTexts {
+    epub: FeatureText;
+    annotations: FeatureText;
+    discussions: FeatureText;
+    groups: FeatureText;
+    progress: FeatureText;
+    customization: FeatureText;
+}
+
 export interface SiteConfig {
     siteName: string;
     siteLogo: string;
@@ -13,6 +27,7 @@ export interface SiteConfig {
     ctaTitle: string;
     ctaDescription: string;
     homepageFeatures: string[];
+    featureTexts: FeatureTexts;
 }
 
 // Toutes les features disponibles par défaut
@@ -29,6 +44,32 @@ const DEFAULT_CONFIG: SiteConfig = {
     ctaTitle: "Prêt à commencer ?",
     ctaDescription: "Créez votre compte gratuitement et commencez à lire.",
     homepageFeatures: ALL_FEATURES,
+    featureTexts: {
+        epub: {
+            title: "Livres EPUB",
+            description: "Importez et lisez vos livres numériques directement dans le navigateur.",
+        },
+        annotations: {
+            title: "Annotations",
+            description: "Surlignez les passages importants et ajoutez vos commentaires.",
+        },
+        discussions: {
+            title: "Discussions",
+            description: "Créez des threads de discussion sur n'importe quelle annotation.",
+        },
+        groups: {
+            title: "Classes & Clubs",
+            description: "Organisez vos élèves en groupes pour la lecture collaborative.",
+        },
+        progress: {
+            title: "Progression",
+            description: "Suivez automatiquement votre avancement dans chaque livre.",
+        },
+        customization: {
+            title: "Personnalisation",
+            description: "Thèmes, polices et taille de texte adaptés à votre confort.",
+        },
+    },
 };
 
 export function useSiteConfig() {

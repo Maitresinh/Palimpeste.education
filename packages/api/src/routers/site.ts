@@ -19,6 +19,19 @@ export const SITE_CONFIG_KEYS = {
     CTA_DESCRIPTION: "cta_description",
     // Homepage features (JSON array of enabled feature keys)
     HOMEPAGE_FEATURES: "homepage_features",
+    // Textes personnalisables des features
+    FEATURE_EPUB_TITLE: "feature_epub_title",
+    FEATURE_EPUB_DESCRIPTION: "feature_epub_description",
+    FEATURE_ANNOTATIONS_TITLE: "feature_annotations_title",
+    FEATURE_ANNOTATIONS_DESCRIPTION: "feature_annotations_description",
+    FEATURE_DISCUSSIONS_TITLE: "feature_discussions_title",
+    FEATURE_DISCUSSIONS_DESCRIPTION: "feature_discussions_description",
+    FEATURE_GROUPS_TITLE: "feature_groups_title",
+    FEATURE_GROUPS_DESCRIPTION: "feature_groups_description",
+    FEATURE_PROGRESS_TITLE: "feature_progress_title",
+    FEATURE_PROGRESS_DESCRIPTION: "feature_progress_description",
+    FEATURE_CUSTOMIZATION_TITLE: "feature_customization_title",
+    FEATURE_CUSTOMIZATION_DESCRIPTION: "feature_customization_description",
     // Informations légales - Impressum
     LEGAL_COMPANY_NAME: "legal_company_name",
     LEGAL_COMPANY_TYPE: "legal_company_type",
@@ -58,6 +71,19 @@ const DEFAULT_CONFIG: Record<string, string> = {
     [SITE_CONFIG_KEYS.CTA_DESCRIPTION]: "Créez votre compte gratuitement et commencez à lire.",
     // Features par défaut (tous activés)
     [SITE_CONFIG_KEYS.HOMEPAGE_FEATURES]: JSON.stringify(Object.values(HOMEPAGE_FEATURE_KEYS)),
+    // Textes par défaut des features
+    [SITE_CONFIG_KEYS.FEATURE_EPUB_TITLE]: "Livres EPUB",
+    [SITE_CONFIG_KEYS.FEATURE_EPUB_DESCRIPTION]: "Importez et lisez vos livres numériques directement dans le navigateur.",
+    [SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_TITLE]: "Annotations",
+    [SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_DESCRIPTION]: "Surlignez les passages importants et ajoutez vos commentaires.",
+    [SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_TITLE]: "Discussions",
+    [SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_DESCRIPTION]: "Créez des threads de discussion sur n'importe quelle annotation.",
+    [SITE_CONFIG_KEYS.FEATURE_GROUPS_TITLE]: "Classes & Clubs",
+    [SITE_CONFIG_KEYS.FEATURE_GROUPS_DESCRIPTION]: "Organisez vos élèves en groupes pour la lecture collaborative.",
+    [SITE_CONFIG_KEYS.FEATURE_PROGRESS_TITLE]: "Progression",
+    [SITE_CONFIG_KEYS.FEATURE_PROGRESS_DESCRIPTION]: "Suivez automatiquement votre avancement dans chaque livre.",
+    [SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_TITLE]: "Personnalisation",
+    [SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_DESCRIPTION]: "Thèmes, polices et taille de texte adaptés à votre confort.",
     // Informations légales par défaut
     [SITE_CONFIG_KEYS.LEGAL_COMPANY_NAME]: "Editeur des confins de l'imaginaire",
     [SITE_CONFIG_KEYS.LEGAL_COMPANY_TYPE]: "Association loi 1901",
@@ -107,6 +133,33 @@ export const siteRouter = router({
             ctaTitle: configMap[SITE_CONFIG_KEYS.CTA_TITLE],
             ctaDescription: configMap[SITE_CONFIG_KEYS.CTA_DESCRIPTION],
             homepageFeatures: JSON.parse(configMap[SITE_CONFIG_KEYS.HOMEPAGE_FEATURES] || "[]") as string[],
+            // Textes des features
+            featureTexts: {
+                epub: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_EPUB_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_EPUB_DESCRIPTION],
+                },
+                annotations: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_DESCRIPTION],
+                },
+                discussions: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_DESCRIPTION],
+                },
+                groups: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_GROUPS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_GROUPS_DESCRIPTION],
+                },
+                progress: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_PROGRESS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_PROGRESS_DESCRIPTION],
+                },
+                customization: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_DESCRIPTION],
+                },
+            },
         };
     }),
 
@@ -145,6 +198,15 @@ export const siteRouter = router({
                 ctaDescription: z.string().max(300).optional(),
                 // Homepage features
                 homepageFeatures: z.array(z.string()).optional(),
+                // Textes des features
+                featureTexts: z.object({
+                    epub: z.object({ title: z.string().max(100), description: z.string().max(300) }).optional(),
+                    annotations: z.object({ title: z.string().max(100), description: z.string().max(300) }).optional(),
+                    discussions: z.object({ title: z.string().max(100), description: z.string().max(300) }).optional(),
+                    groups: z.object({ title: z.string().max(100), description: z.string().max(300) }).optional(),
+                    progress: z.object({ title: z.string().max(100), description: z.string().max(300) }).optional(),
+                    customization: z.object({ title: z.string().max(100), description: z.string().max(300) }).optional(),
+                }).optional(),
             })
         )
         .mutation(async ({ input }) => {
@@ -176,6 +238,31 @@ export const siteRouter = router({
             }
             if (input.homepageFeatures !== undefined) {
                 updates.push({ key: SITE_CONFIG_KEYS.HOMEPAGE_FEATURES, value: JSON.stringify(input.homepageFeatures) });
+            }
+            // Textes des features
+            if (input.featureTexts?.epub) {
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_EPUB_TITLE, value: input.featureTexts.epub.title });
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_EPUB_DESCRIPTION, value: input.featureTexts.epub.description });
+            }
+            if (input.featureTexts?.annotations) {
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_TITLE, value: input.featureTexts.annotations.title });
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_DESCRIPTION, value: input.featureTexts.annotations.description });
+            }
+            if (input.featureTexts?.discussions) {
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_TITLE, value: input.featureTexts.discussions.title });
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_DESCRIPTION, value: input.featureTexts.discussions.description });
+            }
+            if (input.featureTexts?.groups) {
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_GROUPS_TITLE, value: input.featureTexts.groups.title });
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_GROUPS_DESCRIPTION, value: input.featureTexts.groups.description });
+            }
+            if (input.featureTexts?.progress) {
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_PROGRESS_TITLE, value: input.featureTexts.progress.title });
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_PROGRESS_DESCRIPTION, value: input.featureTexts.progress.description });
+            }
+            if (input.featureTexts?.customization) {
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_TITLE, value: input.featureTexts.customization.title });
+                updates.push({ key: SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_DESCRIPTION, value: input.featureTexts.customization.description });
             }
 
             // Upsert chaque configuration
@@ -289,6 +376,33 @@ export const siteRouter = router({
             ctaDescription: configMap[SITE_CONFIG_KEYS.CTA_DESCRIPTION],
             // Homepage features
             homepageFeatures: JSON.parse(configMap[SITE_CONFIG_KEYS.HOMEPAGE_FEATURES] || "[]") as string[],
+            // Textes des features
+            featureTexts: {
+                epub: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_EPUB_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_EPUB_DESCRIPTION],
+                },
+                annotations: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_ANNOTATIONS_DESCRIPTION],
+                },
+                discussions: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_DISCUSSIONS_DESCRIPTION],
+                },
+                groups: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_GROUPS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_GROUPS_DESCRIPTION],
+                },
+                progress: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_PROGRESS_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_PROGRESS_DESCRIPTION],
+                },
+                customization: {
+                    title: configMap[SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_TITLE],
+                    description: configMap[SITE_CONFIG_KEYS.FEATURE_CUSTOMIZATION_DESCRIPTION],
+                },
+            },
             // Informations légales
             legalCompanyName: configMap[SITE_CONFIG_KEYS.LEGAL_COMPANY_NAME],
             legalCompanyType: configMap[SITE_CONFIG_KEYS.LEGAL_COMPANY_TYPE],

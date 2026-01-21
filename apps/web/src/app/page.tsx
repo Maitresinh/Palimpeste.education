@@ -17,50 +17,17 @@ import TeacherGroups from "@/components/teacher-groups";
 import StudentGroups from "@/components/student-groups";
 
 
-const ALL_FEATURES = [
-  {
-    key: "epub",
-    icon: BookOpen,
-    title: "Livres EPUB",
-    description: "Importez et lisez vos livres numériques directement dans le navigateur.",
-    color: "text-blue-500",
-  },
-  {
-    key: "annotations",
-    icon: Highlighter,
-    title: "Annotations",
-    description: "Surlignez les passages importants et ajoutez vos commentaires.",
-    color: "text-yellow-500",
-  },
-  {
-    key: "discussions",
-    icon: MessageSquare,
-    title: "Discussions",
-    description: "Créez des threads de discussion sur n'importe quelle annotation.",
-    color: "text-green-500",
-  },
-  {
-    key: "groups",
-    icon: Users,
-    title: "Classes & Clubs",
-    description: "Organisez vos élèves en groupes pour la lecture collaborative.",
-    color: "text-purple-500",
-  },
-  {
-    key: "progress",
-    icon: BarChart3,
-    title: "Progression",
-    description: "Suivez automatiquement votre avancement dans chaque livre.",
-    color: "text-orange-500",
-  },
-  {
-    key: "customization",
-    icon: Palette,
-    title: "Personnalisation",
-    description: "Thèmes, polices et taille de texte adaptés à votre confort.",
-    color: "text-pink-500",
-  },
-];
+import type { FeatureTexts } from "@/hooks/use-site-config";
+
+// Configuration statique des features (icône et couleur uniquement)
+const FEATURE_CONFIG = {
+  epub: { icon: BookOpen, color: "text-blue-500" },
+  annotations: { icon: Highlighter, color: "text-yellow-500" },
+  discussions: { icon: MessageSquare, color: "text-green-500" },
+  groups: { icon: Users, color: "text-purple-500" },
+  progress: { icon: BarChart3, color: "text-orange-500" },
+  customization: { icon: Palette, color: "text-pink-500" },
+} as const;
 
 function LandingPage() {
   const { config } = useSiteConfig();
@@ -101,21 +68,26 @@ function LandingPage() {
       <section id="features" className="px-4 py-16 scroll-mt-16">
         <h2 className="text-2xl font-semibold text-center mb-10">Fonctionnalités</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-          {ALL_FEATURES
-            .filter((feature) => config.homepageFeatures.includes(feature.key))
-            .map((feature) => (
-              <Card key={feature.key} className="group hover:border-foreground/20 transition-colors">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <feature.icon className={`h-5 w-5 ${feature.color}`} />
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+          {(Object.keys(FEATURE_CONFIG) as Array<keyof typeof FEATURE_CONFIG>)
+            .filter((key) => config.homepageFeatures.includes(key))
+            .map((key) => {
+              const featureConfig = FEATURE_CONFIG[key];
+              const featureText = config.featureTexts[key];
+              const Icon = featureConfig.icon;
+              return (
+                <Card key={key} className="group hover:border-foreground/20 transition-colors">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Icon className={`h-5 w-5 ${featureConfig.color}`} />
+                      {featureText.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{featureText.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
         </div>
       </section>
 

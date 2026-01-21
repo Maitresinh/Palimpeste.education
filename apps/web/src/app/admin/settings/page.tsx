@@ -21,51 +21,30 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Definition des features disponibles
-const ALL_FEATURES = [
-    {
-        key: "epub",
-        icon: BookOpen,
-        title: "Livres EPUB",
-        description: "Importez et lisez vos livres numériques directement dans le navigateur.",
-        color: "text-blue-500",
-    },
-    {
-        key: "annotations",
-        icon: Highlighter,
-        title: "Annotations",
-        description: "Surlignez les passages importants et ajoutez vos commentaires.",
-        color: "text-yellow-500",
-    },
-    {
-        key: "discussions",
-        icon: MessageSquare,
-        title: "Discussions",
-        description: "Créez des threads de discussion sur n'importe quelle annotation.",
-        color: "text-green-500",
-    },
-    {
-        key: "groups",
-        icon: Users,
-        title: "Classes & Clubs",
-        description: "Organisez vos élèves en groupes pour la lecture collaborative.",
-        color: "text-purple-500",
-    },
-    {
-        key: "progress",
-        icon: BarChart3,
-        title: "Progression",
-        description: "Suivez automatiquement votre avancement dans chaque livre.",
-        color: "text-orange-500",
-    },
-    {
-        key: "customization",
-        icon: Palette,
-        title: "Personnalisation",
-        description: "Thèmes, polices et taille de texte adaptés à votre confort.",
-        color: "text-pink-500",
-    },
-];
+// Configuration statique des features (icône et couleur uniquement)
+const FEATURE_CONFIG = {
+    epub: { icon: BookOpen, color: "text-blue-500" },
+    annotations: { icon: Highlighter, color: "text-yellow-500" },
+    discussions: { icon: MessageSquare, color: "text-green-500" },
+    groups: { icon: Users, color: "text-purple-500" },
+    progress: { icon: BarChart3, color: "text-orange-500" },
+    customization: { icon: Palette, color: "text-pink-500" },
+} as const;
+
+type FeatureKey = keyof typeof FEATURE_CONFIG;
+
+interface FeatureTexts {
+    [key: string]: { title: string; description: string };
+}
+
+const DEFAULT_FEATURE_TEXTS: FeatureTexts = {
+    epub: { title: "Livres EPUB", description: "Importez et lisez vos livres numériques directement dans le navigateur." },
+    annotations: { title: "Annotations", description: "Surlignez les passages importants et ajoutez vos commentaires." },
+    discussions: { title: "Discussions", description: "Créez des threads de discussion sur n'importe quelle annotation." },
+    groups: { title: "Classes & Clubs", description: "Organisez vos élèves en groupes pour la lecture collaborative." },
+    progress: { title: "Progression", description: "Suivez automatiquement votre avancement dans chaque livre." },
+    customization: { title: "Personnalisation", description: "Thèmes, polices et taille de texte adaptés à votre confort." },
+};
 
 // Composant pour édition inline de texte
 function InlineEdit({
@@ -175,6 +154,7 @@ export default function AdminSettingsPage() {
         ctaTitle: "",
         ctaDescription: "",
         homepageFeatures: [] as string[],
+        featureTexts: DEFAULT_FEATURE_TEXTS as FeatureTexts,
     });
 
     // État du formulaire - Legal
@@ -210,7 +190,8 @@ export default function AdminSettingsPage() {
                 siteSubtitle: config.siteSubtitle,
                 ctaTitle: config.ctaTitle,
                 ctaDescription: config.ctaDescription,
-                homepageFeatures: config.homepageFeatures || ALL_FEATURES.map(f => f.key),
+                homepageFeatures: config.homepageFeatures || Object.keys(FEATURE_CONFIG),
+                featureTexts: config.featureTexts || DEFAULT_FEATURE_TEXTS,
             });
             setLegalData({
                 companyName: config.legalCompanyName,
@@ -261,8 +242,21 @@ export default function AdminSettingsPage() {
         },
     });
 
-    const handleFormChange = (field: keyof typeof formData, value: string | boolean | number | string[]) => {
+    const handleFormChange = (field: keyof typeof formData, value: string | boolean | number | string[] | FeatureTexts) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleFeatureTextChange = (featureKey: string, field: "title" | "description", value: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            featureTexts: {
+                ...prev.featureTexts,
+                [featureKey]: {
+                    ...prev.featureTexts[featureKey],
+                    [field]: value,
+                },
+            },
+        }));
     };
 
     const handleLegalChange = (field: keyof typeof legalData, value: string) => {
@@ -409,7 +403,8 @@ export default function AdminSettingsPage() {
                                                         siteSubtitle: config.siteSubtitle,
                                                         ctaTitle: config.ctaTitle,
                                                         ctaDescription: config.ctaDescription,
-                                                        homepageFeatures: config.homepageFeatures || ALL_FEATURES.map(f => f.key),
+                                                        homepageFeatures: config.homepageFeatures || Object.keys(FEATURE_CONFIG),
+                                                        featureTexts: config.featureTexts || DEFAULT_FEATURE_TEXTS,
                                                     });
                                                     toast.info("Modifications annulées");
                                                 }
@@ -601,35 +596,50 @@ export default function AdminSettingsPage() {
                                     <div className="px-6 py-8">
                                         <h3 className="text-xl font-semibold text-center mb-2">Fonctionnalités</h3>
                                         <p className="text-xs text-center text-muted-foreground mb-6">
-                                            Cliquez sur une carte pour l'afficher/masquer sur la homepage
+                                            Cliquez sur l'icone oeil pour afficher/masquer. Cliquez sur le texte pour le modifier.
                                         </p>
                                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">
-                                            {ALL_FEATURES.map((feature) => {
-                                                const isEnabled = formData.homepageFeatures.includes(feature.key);
-                                                const Icon = feature.icon;
+                                            {(Object.keys(FEATURE_CONFIG) as FeatureKey[]).map((featureKey) => {
+                                                const featureConfig = FEATURE_CONFIG[featureKey];
+                                                const featureText = formData.featureTexts[featureKey] || DEFAULT_FEATURE_TEXTS[featureKey];
+                                                const isEnabled = formData.homepageFeatures.includes(featureKey);
+                                                const Icon = featureConfig.icon;
                                                 return (
                                                     <div
-                                                        key={feature.key}
-                                                        onClick={() => toggleFeature(feature.key)}
-                                                        className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${isEnabled
+                                                        key={featureKey}
+                                                        className={`relative p-4 rounded-lg border-2 transition-all ${isEnabled
                                                             ? "border-primary bg-primary/5 shadow-sm"
-                                                            : "border-dashed border-muted-foreground/30 opacity-40 hover:opacity-60"
+                                                            : "border-dashed border-muted-foreground/30 opacity-40"
                                                             }`}
                                                     >
-                                                        <div className="absolute top-2 right-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleFeature(featureKey)}
+                                                            className="absolute top-2 right-2 p-1 rounded hover:bg-muted transition-colors"
+                                                            title={isEnabled ? "Masquer" : "Afficher"}
+                                                        >
                                                             {isEnabled ? (
                                                                 <Eye className="h-4 w-4 text-primary" />
                                                             ) : (
                                                                 <EyeOff className="h-4 w-4 text-muted-foreground" />
                                                             )}
-                                                        </div>
+                                                        </button>
                                                         <div className="flex items-center gap-2 mb-2">
-                                                            <Icon className={`h-5 w-5 ${isEnabled ? feature.color : "text-muted-foreground"}`} />
-                                                            <span className="font-medium">{feature.title}</span>
+                                                            <Icon className={`h-5 w-5 flex-shrink-0 ${isEnabled ? featureConfig.color : "text-muted-foreground"}`} />
+                                                            <InlineEdit
+                                                                value={featureText.title}
+                                                                onChange={(v) => handleFeatureTextChange(featureKey, "title", v)}
+                                                                placeholder="Titre..."
+                                                                className="font-medium text-sm"
+                                                            />
                                                         </div>
-                                                        <p className="text-sm text-muted-foreground line-clamp-2">
-                                                            {feature.description}
-                                                        </p>
+                                                        <InlineEdit
+                                                            value={featureText.description}
+                                                            onChange={(v) => handleFeatureTextChange(featureKey, "description", v)}
+                                                            placeholder="Description..."
+                                                            className="text-sm text-muted-foreground"
+                                                            multiline
+                                                        />
                                                     </div>
                                                 );
                                             })}
