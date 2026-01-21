@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Footer from "@/components/footer";
 import MyBooks from "@/components/my-books";
-import { Users, BookOpen, MessageSquare, Highlighter, BarChart3, Palette, ArrowRight } from "lucide-react";
+import PublicLibraryPreview from "@/components/public-library-preview";
+import { Users, BookOpen, MessageSquare, Highlighter, BarChart3, Palette, ArrowRight, Globe, Library } from "lucide-react";
 
 import { trpc } from "@/utils/trpc";
 import { useSiteConfig } from "@/hooks/use-site-config";
@@ -151,18 +152,32 @@ function Dashboard() {
             />
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">
                 <Link href="/dashboard/books" className="flex items-center gap-2 hover:underline decoration-1 underline-offset-4">
-                  <BookOpen className="h-4 w-4" />
-                  Mes Livres
+                  <Library className="h-4 w-4" />
+                  Mes lectures
                 </Link>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <MyBooks />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">
+                <Link href={"/dashboard/library" as any} className="flex items-center gap-2 hover:underline decoration-1 underline-offset-4">
+                  <Globe className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  Bibliothèque publique
+                </Link>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PublicLibraryPreview />
             </CardContent>
           </Card>
 
@@ -186,7 +201,7 @@ function Dashboard() {
               <CardTitle className="text-base">
                 <Link href={"/dashboard/clubs" as any} className="flex items-center gap-2 hover:underline decoration-1 underline-offset-4">
                   <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  Mes Clubs
+                  Mes clubs
                 </Link>
               </CardTitle>
             </CardHeader>

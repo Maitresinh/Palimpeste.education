@@ -21,6 +21,12 @@ export const document = pgTable("document", {
   groupId: text("group_id")
     .references(() => group.id, { onDelete: "cascade" }),
 
+  // Document public (bibliothèque publique)
+  isPublic: text("is_public").default("false").notNull(),
+
+  // Indique si ce livre a été réclamé depuis la bibliothèque publique
+  claimedFromPublic: text("claimed_from_public").default("false").notNull(),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -29,6 +35,7 @@ export const document = pgTable("document", {
 }, (table) => [
   index("document_ownerId_idx").on(table.ownerId),
   index("document_groupId_idx").on(table.groupId),
+  index("document_isPublic_idx").on(table.isPublic),
 ]);
 
 // Relations

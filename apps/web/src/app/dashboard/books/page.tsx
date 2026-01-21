@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, FileText, Upload, Trash2, MoreVertical, Library } from "lucide-react";
+import { BookOpen, FileText, Upload, Trash2, MoreVertical, Library, Users, Globe, User, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "@/utils/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +32,12 @@ export default function DashboardBooksPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  const { data: books, isLoading, refetch } = useQuery(trpc.documents.getMyBooksWithProgress.queryOptions());
+  // Get user role
+  const { data: userData } = useQuery(trpc.user.me.queryOptions());
+  const userRole = userData?.role || "STUDENT";
+  const canUpload = userRole === "TEACHER" || userRole === "ADMIN";
+
+  const { data: books, isLoading, refetch } = useQuery(trpc.documents.getAccessibleBooksWithProgress.queryOptions());
 
   // Mutation pour uploader un livre
   const uploadBook = useMutation({
@@ -55,7 +61,7 @@ export default function DashboardBooksPage() {
     onSuccess: async () => {
       toast.success("Livre ajouté avec succès !");
       setIsUploading(false);
-      await queryClient.invalidateQueries({ queryKey: ["documents", "getMyBooksWithProgress"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents", "getAccessibleBooksWithProgress"] });
       await refetch();
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -82,7 +88,7 @@ export default function DashboardBooksPage() {
     },
     onSuccess: async () => {
       toast.success("Livre supprimé");
-      await queryClient.invalidateQueries({ queryKey: ["documents", "getMyBooksWithProgress"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents", "getAccessibleBooksWithProgress"] });
       await refetch();
     },
     onError: () => {
@@ -117,49 +123,68 @@ export default function DashboardBooksPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Library className="h-5 w-5" />
-          Mes livres importés
+          Mes lectures
         </h1>
         <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".epub,application/epub+zip"
-            onChange={handleFileSelect}
-            className="hidden"
-            id="book-upload-dashboard"
-          />
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            size="sm"
-            className="gap-2"
-          >
-            {isUploading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Upload...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                Importer
-              </>
-            )}
-          </Button>
-
+          {canUpload && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".epub,application/epub+zip"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="book-upload-dashboard"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                size="sm"
+                className="gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Upload...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Importer
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </div>
+
+      <p className="text-sm text-muted-foreground">
+        {canUpload
+          ? "Tous vos livres : importés, partagés dans vos classes et clubs."
+          : "Tous les livres accessibles depuis vos classes et clubs."}
+      </p>
 
       {books && books.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Aucun livre importé pour le moment.
+            {canUpload ? (
+              <>Aucun livre pour le moment. Importez-en un pour commencer.</>
+            ) : (
+              <>
+                Aucun livre accessible pour le moment.
+                <br />
+                Rejoignez une classe ou un club pour accéder aux livres partagés.
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
           {books?.map((book: any) => {
             const progress = book.progress?.progressPercentage ?? 0;
+            const isGroupBook = !!book.groupId;
+            const isPersonalBook = !book.groupId && book.ownerId === userData?.id;
             return (
               <Card key={book.id} className="group hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col !py-0 !gap-0">
                 {/* Cover du livre - Avec coins arrondis en haut */}
@@ -192,29 +217,60 @@ export default function DashboardBooksPage() {
                     </div>
                   )}
 
-                  {/* Dropdown menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      onClick={(e) => e.preventDefault()}
-                      className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shadow-md bg-black/50 hover:bg-black/70 text-white rounded-md flex items-center justify-center"
-                    >
-                      <MoreVertical className="h-3.5 w-3.5" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (confirm("Voulez-vous vraiment supprimer ce livre ?")) {
-                            deleteBook.mutate(book.id);
-                          }
-                        }}
+                  {/* Source indicator badge */}
+                  {isGroupBook && book.groupName ? (
+                    // Livre d'un groupe (Classe ou Club)
+                    <div className={`absolute top-1.5 right-1.5 text-white text-[8px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5 max-w-[80%] truncate ${
+                      book.groupType === "CLASS"
+                        ? "bg-blue-500/90"
+                        : "bg-purple-500/90"
+                    }`}>
+                      {book.groupType === "CLASS" ? (
+                        <GraduationCap className="h-2.5 w-2.5 flex-shrink-0" />
+                      ) : (
+                        <BookOpen className="h-2.5 w-2.5 flex-shrink-0" />
+                      )}
+                      <span className="truncate">{book.groupName}</span>
+                    </div>
+                  ) : isPersonalBook && book.claimedFromPublic === "true" ? (
+                    // Livre réclamé de la bibliothèque publique
+                    <div className="absolute top-1.5 right-1.5 bg-green-500/90 text-white text-[8px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <Globe className="h-2.5 w-2.5 flex-shrink-0" />
+                      <span>Bibliothèque</span>
+                    </div>
+                  ) : isPersonalBook ? (
+                    // Livre personnel importé par l'utilisateur
+                    <div className="absolute top-1.5 right-1.5 bg-gray-500/90 text-white text-[8px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <User className="h-2.5 w-2.5 flex-shrink-0" />
+                      <span>Personnel</span>
+                    </div>
+                  ) : null}
+
+                  {/* Dropdown menu (only for personal books) */}
+                  {isPersonalBook && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        onClick={(e) => e.preventDefault()}
+                        className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shadow-md bg-black/50 hover:bg-black/70 text-white rounded-md flex items-center justify-center"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (confirm("Voulez-vous vraiment supprimer ce livre ?")) {
+                              deleteBook.mutate(book.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </Link>
 
                 <div className="p-2 space-y-1">
@@ -253,5 +309,3 @@ export default function DashboardBooksPage() {
     </div>
   );
 }
-
-

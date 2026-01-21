@@ -28,9 +28,14 @@ export default function MyBooks() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  // Récupérer mes livres
+  // Get user role
+  const { data: userData } = useQuery(trpc.user.me.queryOptions());
+  const userRole = userData?.role || "STUDENT";
+  const canUpload = userRole === "TEACHER" || userRole === "ADMIN";
+
+  // Récupérer tous les livres accessibles
   const { data: books, isLoading, refetch } = useQuery(
-    trpc.documents.getMyBooksWithProgress.queryOptions()
+    trpc.documents.getAccessibleBooksWithProgress.queryOptions()
   );
 
   // Fonction pour uploader un seul fichier
@@ -76,7 +81,7 @@ export default function MyBooks() {
         toast.error(`Échec pour ${results.failed.length} fichier${results.failed.length > 1 ? 's' : ''}: ${results.failed.join(', ')}`);
       }
       setIsUploading(false);
-      await queryClient.invalidateQueries({ queryKey: ["documents", "getMyBooks"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents", "getAccessibleBooksWithProgress"] });
       await refetch();
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -103,7 +108,7 @@ export default function MyBooks() {
     },
     onSuccess: async () => {
       toast.success("Livre supprimé");
-      await queryClient.invalidateQueries({ queryKey: ["documents", "getMyBooks"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents", "getAccessibleBooksWithProgress"] });
       await refetch();
     },
     onError: () => {
@@ -168,36 +173,38 @@ export default function MyBooks() {
         <p className="text-sm text-muted-foreground">
           {books?.length || 0} livre{(books?.length || 0) > 1 ? "s" : ""}
         </p>
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".epub,application/epub+zip"
-            onChange={handleFileSelect}
-            className="hidden"
-            id="book-upload"
-            multiple
-          />
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            size="sm"
-            variant="outline"
-            className="gap-2"
-          >
-            {isUploading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Upload...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                Importer
-              </>
-            )}
-          </Button>
-        </div>
+        {canUpload && (
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".epub,application/epub+zip"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="book-upload"
+              multiple
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              size="sm"
+              variant="outline"
+              className="gap-2"
+            >
+              {isUploading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Upload...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Importer
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
       {books && books.length === 0 ? (
@@ -207,29 +214,40 @@ export default function MyBooks() {
               <FileText className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground mb-2">
-              Aucun livre dans votre bibliothèque
+              {canUpload ? "Aucun livre pour le moment" : "Aucun livre accessible"}
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="gap-2"
-            >
-              <Upload className="h-4 w-4" />
-              Importer votre premier EPUB
-            </Button>
+            {canUpload ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Importer votre premier EPUB
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Rejoignez une classe ou un club pour accéder aux livres partagés.
+              </p>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-3 md:grid-cols-3 gap-3">
-          {books?.map((book: any) => (
-            <BookCard
-              key={book.id}
-              book={book}
-              onDelete={() => deleteBook.mutate(book.id)}
-              onClick={() => router.push(`/read/${book.id}` as any)}
-            />
-          ))}
+          {books?.map((book: any) => {
+            const isPersonalBook = !book.groupId && book.ownerId === userData?.id;
+            return (
+              <BookCard
+                key={book.id}
+                book={book}
+                currentUserId={userData?.id}
+                showSourceBadge={true}
+                onDelete={isPersonalBook ? () => deleteBook.mutate(book.id) : undefined}
+                onClick={() => router.push(`/read/${book.id}` as any)}
+              />
+            );
+          })}
         </div>
       )
       }

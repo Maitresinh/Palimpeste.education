@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, BookOpen, Copy, FileText, Library, RefreshCw, Trash2, Upload, Users, Calendar, Clock, Archive, ArchiveRestore, Share2, FolderDown, Check, MessageSquare } from "lucide-react";
+import { ArrowLeft, BookOpen, Copy, FileText, Library, RefreshCw, Trash2, Upload, Users, Calendar, Clock, Archive, ArchiveRestore, Share2, FolderDown, Check, MessageSquare, Globe, Search } from "lucide-react";
 
 import { trpc } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { BookCard } from "@/components/book-card";
 import { copyToClipboard } from "@/lib/clipboard";
 
@@ -54,10 +56,17 @@ export function GroupDetail() {
     // Modal state for importing from library
     const [showImportDialog, setShowImportDialog] = useState(false);
     const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
+    const [publicLibrarySearch, setPublicLibrarySearch] = useState("");
+    const [debouncedPublicSearch, setDebouncedPublicSearch] = useState("");
 
     const { data: group, isLoading: isLoadingGroup } = useQuery(
         trpc.groups.get.queryOptions({ id: groupId })
     );
+
+    // Get user role
+    const { data: userData } = useQuery(trpc.user.me.queryOptions());
+    const globalUserRole = userData?.role || "STUDENT";
+    const canUploadPersonal = globalUserRole === "TEACHER" || globalUserRole === "ADMIN";
 
     // Permissions logic based on Group Role (RBAC)
     // We can only check this AFTER group is fetched
@@ -74,9 +83,14 @@ export function GroupDetail() {
         trpc.documents.getGroupBooks.queryOptions({ groupId })
     );
 
-    // Query for personal library books (for import dialog)
+    // Query for personal library books (for import dialog - teachers/admins only)
     const { data: myBooks, isLoading: isLoadingMyBooks } = useQuery(
         trpc.documents.getMyBooks.queryOptions()
+    );
+
+    // Query for public library books (for import dialog)
+    const { data: publicBooks, isLoading: isLoadingPublicBooks } = useQuery(
+        trpc.documents.getPublicLibrary.queryOptions({ search: debouncedPublicSearch || undefined })
     );
 
     const regenerateCode = useMutation({
@@ -174,7 +188,7 @@ export function GroupDetail() {
         onError: (error: Error) => toast.error(error.message || "Erreur lors de la suppression"),
     });
 
-    // Mutation for copying books from library to group
+    // Mutation for copying books from personal library to group
     const copyToGroup = useMutation({
         mutationFn: async ({ bookId, groupId: gid }: { bookId: string; groupId: string }) => {
             const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/trpc/documents.copyToGroup`, {
@@ -196,8 +210,30 @@ export function GroupDetail() {
         onError: (error: Error) => toast.error(error.message || "Erreur lors de la copie"),
     });
 
-    // Handle importing selected books
-    const handleImportBooks = async () => {
+    // Mutation for adding public books to group
+    const addPublicBookToGroup = useMutation({
+        mutationFn: async ({ publicBookId, groupId: gid }: { publicBookId: string; groupId: string }) => {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/trpc/documents.addPublicBookToGroup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ publicBookId, groupId: gid }),
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error?.message || "Erreur lors de l'ajout");
+            }
+            return response.json();
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["documents", "getGroupBooks"] });
+            await refetchBooks();
+        },
+        onError: (error: Error) => toast.error(error.message || "Erreur lors de l'ajout"),
+    });
+
+    // Handle importing selected books from personal library
+    const handleImportPersonalBooks = async () => {
         if (selectedBooks.length === 0) return;
 
         let successCount = 0;
@@ -216,6 +252,37 @@ export function GroupDetail() {
 
         setSelectedBooks([]);
         setShowImportDialog(false);
+    };
+
+    // Handle importing selected books from public library
+    const handleImportPublicBooks = async () => {
+        if (selectedBooks.length === 0) return;
+
+        let successCount = 0;
+        for (const bookId of selectedBooks) {
+            try {
+                await addPublicBookToGroup.mutateAsync({ publicBookId: bookId, groupId });
+                successCount++;
+            } catch (e) {
+                // Individual error handled by mutation
+            }
+        }
+
+        if (successCount > 0) {
+            toast.success(`${successCount} livre${successCount > 1 ? 's' : ''} ajouté${successCount > 1 ? 's' : ''} !`);
+        }
+
+        setSelectedBooks([]);
+        setShowImportDialog(false);
+    };
+
+    // Handle search change with debounce
+    const handlePublicSearchChange = (value: string) => {
+        setPublicLibrarySearch(value);
+        const timeout = setTimeout(() => {
+            setDebouncedPublicSearch(value);
+        }, 300);
+        return () => clearTimeout(timeout);
     };
 
     // Toggle book selection
@@ -448,21 +515,23 @@ export function GroupDetail() {
                                     variant="outline"
                                     className="gap-2"
                                     onClick={() => setShowImportDialog(true)}
-                                    disabled={copyToGroup.isPending}
+                                    disabled={copyToGroup.isPending || addPublicBookToGroup.isPending}
                                 >
                                     <FolderDown className="h-4 w-4" />
-                                    Ma bibliothèque
+                                    Ajouter un livre
                                 </Button>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="gap-2"
-                                    onClick={() => document.getElementById("group-book-upload")?.click()}
-                                    disabled={uploadBookToGroup.isPending}
-                                >
-                                    <Upload className="h-4 w-4" />
-                                    {uploadBookToGroup.isPending ? "Upload..." : "Uploader"}
-                                </Button>
+                                {canUploadPersonal && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-2"
+                                        onClick={() => document.getElementById("group-book-upload")?.click()}
+                                        disabled={uploadBookToGroup.isPending}
+                                    >
+                                        <Upload className="h-4 w-4" />
+                                        {uploadBookToGroup.isPending ? "Upload..." : "Uploader"}
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -562,69 +631,159 @@ export function GroupDetail() {
                 )}
             </div>
 
-            {/* Dialog pour importer des livres de la bibliothèque */}
-            <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+            {/* Dialog pour importer des livres */}
+            <Dialog open={showImportDialog} onOpenChange={(open) => {
+                setShowImportDialog(open);
+                if (!open) {
+                    setSelectedBooks([]);
+                    setPublicLibrarySearch("");
+                    setDebouncedPublicSearch("");
+                }
+            }}>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <FolderDown className="h-5 w-5" />
-                            Importer depuis ma bibliothèque
+                            Ajouter des livres
                         </DialogTitle>
                         <DialogDescription>
-                            Sélectionnez les livres de votre bibliothèque personnelle à ajouter au groupe.
+                            Sélectionnez les livres à ajouter au groupe.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto py-4">
-                        {isLoadingMyBooks ? (
-                            <div className="space-y-2">
-                                <Skeleton className="h-16 w-full" />
-                                <Skeleton className="h-16 w-full" />
-                            </div>
-                        ) : myBooks && myBooks.length === 0 ? (
-                            <div className="py-8 text-center text-sm text-muted-foreground">
-                                <Library className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p>Votre bibliothèque personnelle est vide.</p>
-                                <p className="mt-1">Uploadez d'abord des livres dans votre bibliothèque.</p>
-                            </div>
-                        ) : (
-                            <div className="grid gap-2">
-                                {myBooks?.map((book: any) => {
-                                    const isSelected = selectedBooks.includes(book.id);
-                                    return (
-                                        <div
-                                            key={book.id}
-                                            onClick={() => toggleBookSelection(book.id)}
-                                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
-                        ${isSelected
-                                                    ? 'border-primary bg-primary/5'
-                                                    : 'border-border hover:border-muted-foreground/50'
-                                                }`}
-                                        >
-                                            <div className={`flex-shrink-0 w-6 h-6 rounded border flex items-center justify-center transition-colors
-                        ${isSelected
-                                                    ? 'bg-primary border-primary text-primary-foreground'
-                                                    : 'border-muted-foreground/30'
-                                                }`}
-                                            >
-                                                {isSelected && <Check className="h-4 w-4" />}
-                                            </div>
-                                            <BookCover bookId={book.id} title={book.title} />
-                                            <div className="min-w-0 flex-1">
-                                                <p className="font-medium text-sm truncate">{book.title}</p>
-                                                {book.author && (
-                                                    <p className="text-xs text-muted-foreground truncate">{book.author}</p>
-                                                )}
-                                                <p className="text-xs text-muted-foreground">
-                                                    Ajouté le {new Date(book.createdAt).toLocaleDateString("fr-FR")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                    <Tabs defaultValue={canUploadPersonal ? "personal" : "public"} className="flex-1 flex flex-col min-h-0" onValueChange={() => setSelectedBooks([])}>
+                        <TabsList className="grid w-full grid-cols-2">
+                            {canUploadPersonal && (
+                                <TabsTrigger value="personal" className="gap-2">
+                                    <Library className="h-4 w-4" />
+                                    Ma bibliothèque
+                                </TabsTrigger>
+                            )}
+                            <TabsTrigger value="public" className={`gap-2 ${!canUploadPersonal ? 'col-span-2' : ''}`}>
+                                <Globe className="h-4 w-4" />
+                                Bibliothèque publique
+                            </TabsTrigger>
+                        </TabsList>
+
+                        {canUploadPersonal && (
+                            <TabsContent value="personal" className="flex-1 overflow-y-auto py-4 mt-0">
+                                {isLoadingMyBooks ? (
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-16 w-full" />
+                                        <Skeleton className="h-16 w-full" />
+                                    </div>
+                                ) : myBooks && myBooks.length === 0 ? (
+                                    <div className="py-8 text-center text-sm text-muted-foreground">
+                                        <Library className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <p>Votre bibliothèque personnelle est vide.</p>
+                                        <p className="mt-1">Uploadez d&apos;abord des livres dans votre bibliothèque.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-2">
+                                        {myBooks?.map((book: any) => {
+                                            const isSelected = selectedBooks.includes(book.id);
+                                            return (
+                                                <div
+                                                    key={book.id}
+                                                    onClick={() => toggleBookSelection(book.id)}
+                                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+                                                        ${isSelected
+                                                            ? 'border-primary bg-primary/5'
+                                                            : 'border-border hover:border-muted-foreground/50'
+                                                        }`}
+                                                >
+                                                    <div className={`flex-shrink-0 w-6 h-6 rounded border flex items-center justify-center transition-colors
+                                                        ${isSelected
+                                                            ? 'bg-primary border-primary text-primary-foreground'
+                                                            : 'border-muted-foreground/30'
+                                                        }`}
+                                                    >
+                                                        {isSelected && <Check className="h-4 w-4" />}
+                                                    </div>
+                                                    <BookCover bookId={book.id} title={book.title} />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-medium text-sm truncate">{book.title}</p>
+                                                        {book.author && (
+                                                            <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                                                        )}
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Ajouté le {new Date(book.createdAt).toLocaleDateString("fr-FR")}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </TabsContent>
                         )}
-                    </div>
+
+                        <TabsContent value="public" className="flex-1 overflow-y-auto py-4 mt-0 space-y-3">
+                            {/* Search input */}
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Rechercher un livre..."
+                                    value={publicLibrarySearch}
+                                    onChange={(e) => handlePublicSearchChange(e.target.value)}
+                                    className="pl-9"
+                                />
+                            </div>
+
+                            {isLoadingPublicBooks ? (
+                                <div className="space-y-2">
+                                    <Skeleton className="h-16 w-full" />
+                                    <Skeleton className="h-16 w-full" />
+                                </div>
+                            ) : publicBooks && publicBooks.length === 0 ? (
+                                <div className="py-8 text-center text-sm text-muted-foreground">
+                                    <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    {debouncedPublicSearch ? (
+                                        <p>Aucun livre trouvé pour &quot;{debouncedPublicSearch}&quot;</p>
+                                    ) : (
+                                        <p>La bibliothèque publique est vide pour le moment.</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid gap-2">
+                                    {publicBooks?.map((book: any) => {
+                                        const isSelected = selectedBooks.includes(book.id);
+                                        return (
+                                            <div
+                                                key={book.id}
+                                                onClick={() => toggleBookSelection(book.id)}
+                                                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+                                                    ${isSelected
+                                                        ? 'border-primary bg-primary/5'
+                                                        : 'border-border hover:border-muted-foreground/50'
+                                                    }`}
+                                            >
+                                                <div className={`flex-shrink-0 w-6 h-6 rounded border flex items-center justify-center transition-colors
+                                                    ${isSelected
+                                                        ? 'bg-primary border-primary text-primary-foreground'
+                                                        : 'border-muted-foreground/30'
+                                                    }`}
+                                                >
+                                                    {isSelected && <Check className="h-4 w-4" />}
+                                                </div>
+                                                <BookCover bookId={book.id} title={book.title} />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-medium text-sm truncate">{book.title}</p>
+                                                    {book.author && (
+                                                        <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                                                    )}
+                                                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                                                        <Globe className="h-3 w-3" />
+                                                        Bibliothèque publique
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </TabsContent>
+                    </Tabs>
 
                     <div className="flex items-center justify-between border-t pt-4">
                         <p className="text-sm text-muted-foreground">
@@ -641,11 +800,20 @@ export function GroupDetail() {
                                 Annuler
                             </Button>
                             <Button
-                                onClick={handleImportBooks}
-                                disabled={selectedBooks.length === 0 || copyToGroup.isPending}
+                                onClick={() => {
+                                    // Determine which import function to use based on the current tab
+                                    // Check if any selected book is from public library
+                                    const isPublicImport = publicBooks?.some((b: any) => selectedBooks.includes(b.id));
+                                    if (isPublicImport) {
+                                        handleImportPublicBooks();
+                                    } else {
+                                        handleImportPersonalBooks();
+                                    }
+                                }}
+                                disabled={selectedBooks.length === 0 || copyToGroup.isPending || addPublicBookToGroup.isPending}
                                 className="gap-2"
                             >
-                                {copyToGroup.isPending ? (
+                                {(copyToGroup.isPending || addPublicBookToGroup.isPending) ? (
                                     <>
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                                         Import...
@@ -653,7 +821,7 @@ export function GroupDetail() {
                                 ) : (
                                     <>
                                         <FolderDown className="h-4 w-4" />
-                                        Importer ({selectedBooks.length})
+                                        Ajouter ({selectedBooks.length})
                                     </>
                                 )}
                             </Button>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Users, Library, Shield } from "lucide-react";
+import { BookOpen, Users, Library, Shield, Globe } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Card } from "@/components/ui/card";
@@ -51,7 +51,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* Mobile: horizontal nav at top */}
       <div className="md:hidden sticky top-0 z-10 bg-background border-b px-2 py-1">
         <nav className="flex items-stretch">
-          <div className="flex-1"><NavItem href="/dashboard/books" label="Livres" icon={<Library className="h-5 w-5" />} /></div>
+          <div className="flex-1"><NavItem href="/dashboard/books" label="Lectures" icon={<Library className="h-5 w-5" />} /></div>
+          <div className="flex-1"><NavItem href="/dashboard/library" label="Public" icon={<Globe className="h-5 w-5" />} /></div>
           <div className="flex-1"><NavItem href="/dashboard/groups" label="Classes" icon={<Users className="h-5 w-5" />} /></div>
           <div className="flex-1"><NavItem href="/dashboard/clubs" label="Clubs" icon={<BookOpen className="h-5 w-5" />} /></div>
           {isAdmin && (
@@ -75,7 +76,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             </div>
 
             <nav className="space-y-1">
-              <NavItem href="/dashboard/books" label="Mes livres" icon={<Library className="h-4 w-4" />} />
+              <NavItem href="/dashboard/books" label="Mes lectures" icon={<Library className="h-4 w-4" />} />
+              <NavItem href="/dashboard/library" label="Bibliothèque publique" icon={<Globe className="h-4 w-4" />} />
               <NavItem href="/dashboard/groups" label="Mes classes" icon={<Users className="h-4 w-4" />} />
               <NavItem href="/dashboard/clubs" label="Mes clubs" icon={<BookOpen className="h-4 w-4" />} />
             </nav>

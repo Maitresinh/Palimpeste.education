@@ -1,8 +1,8 @@
 "use client";
-// Unified BookCard Component v1.1
+// Unified BookCard Component v1.2
 
 import { Card } from "@/components/ui/card";
-import { BookOpen, MoreVertical, Trash2 } from "lucide-react";
+import { BookOpen, MoreVertical, Trash2, GraduationCap, Globe, User } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,23 +21,39 @@ interface BookCardProps {
         progress?: {
             progressPercentage?: number;
         } | null;
+        // Source info for badges
+        groupId?: string | null;
+        groupName?: string | null;
+        groupType?: "CLASS" | "CLUB" | null;
+        ownerId?: string | null;
+        claimedFromPublic?: string | null;
     };
+    currentUserId?: string; // To determine if book is personal
     onClick?: () => void;
     // Actions
     onDelete?: () => void; // For "My Books" (delete from library)
     onRemoveFromGroup?: () => void; // For "Group Books" (remove from group)
     canManage?: boolean; // For "Group Books" (permission check)
+    isLoading?: boolean; // Show loading spinner overlay
+    showSourceBadge?: boolean; // Show source indicator badge
 }
 
 export function BookCard({
     book,
+    currentUserId,
     onClick,
     onDelete,
     onRemoveFromGroup,
     canManage = true, // Default to true for My Books context where user owns the book
+    isLoading = false,
+    showSourceBadge = false,
 }: BookCardProps) {
     // Determine if we should show the dropdown or just a delete button or nothing
     const showActions = !!onDelete || (!!onRemoveFromGroup && canManage);
+
+    // Source badge logic
+    const isGroupBook = !!book.groupId;
+    const isPersonalBook = !book.groupId && book.ownerId === currentUserId;
 
     return (
         <Card
@@ -59,6 +75,13 @@ export function BookCard({
                     <BookOpen className="h-12 w-12 text-muted-foreground/20" />
                 </div>
 
+                {/* Loading overlay */}
+                {isLoading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    </div>
+                )}
+
                 {/* Overlay progression */}
                 {book.progress && (
                     <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/20">
@@ -74,6 +97,34 @@ export function BookCard({
                     <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
                         {book.progress.progressPercentage}%
                     </div>
+                )}
+
+                {/* Source indicator badge */}
+                {showSourceBadge && (
+                    isGroupBook && book.groupName ? (
+                        <div className={`absolute top-1.5 right-1.5 text-white text-[8px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5 max-w-[80%] truncate ${
+                            book.groupType === "CLASS"
+                                ? "bg-blue-500/90"
+                                : "bg-purple-500/90"
+                        }`}>
+                            {book.groupType === "CLASS" ? (
+                                <GraduationCap className="h-2.5 w-2.5 flex-shrink-0" />
+                            ) : (
+                                <BookOpen className="h-2.5 w-2.5 flex-shrink-0" />
+                            )}
+                            <span className="truncate">{book.groupName}</span>
+                        </div>
+                    ) : isPersonalBook && book.claimedFromPublic === "true" ? (
+                        <div className="absolute top-1.5 right-1.5 bg-green-500/90 text-white text-[8px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <Globe className="h-2.5 w-2.5 flex-shrink-0" />
+                            <span>Bibliothèque</span>
+                        </div>
+                    ) : isPersonalBook ? (
+                        <div className="absolute top-1.5 right-1.5 bg-gray-500/90 text-white text-[8px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <User className="h-2.5 w-2.5 flex-shrink-0" />
+                            <span>Personnel</span>
+                        </div>
+                    ) : null
                 )}
 
                 {/* Actions Menu */}

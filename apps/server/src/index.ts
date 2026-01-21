@@ -182,6 +182,7 @@ app.post("/api/upload/epub", async (c) => {
     const formData = await c.req.formData();
     const file = formData.get("file") as File;
     const groupId = formData.get("groupId") as string | null;
+    const isPublic = formData.get("isPublic") as string | null;
 
     if (!file) {
       return c.json({ error: "No file provided" }, 400);
@@ -192,7 +193,30 @@ app.post("/api/upload/epub", async (c) => {
       return c.json({ error: "Only EPUB files are allowed" }, 400);
     }
 
-    // Vérifier les permissions
+    // Récupérer le rôle de l'utilisateur
+    const [userData] = await db.select({ role: user.role, storageUsed: user.storageUsed, storageQuota: user.storageQuota })
+      .from(user)
+      .where(eq(user.id, session.user.id))
+      .limit(1);
+
+    const userRole = userData?.role;
+
+    // Vérifier les permissions pour upload public
+    if (isPublic === "true") {
+      if (userRole !== "ADMIN") {
+        return c.json({ error: "Seuls les administrateurs peuvent ajouter des livres publics" }, 403);
+      }
+    }
+
+    // Vérifier les permissions pour upload personnel (sans groupId)
+    if (!groupId && isPublic !== "true") {
+      // Les STUDENTS ne peuvent pas uploader de livres personnels
+      if (userRole === "STUDENT") {
+        return c.json({ error: "Les élèves ne peuvent pas importer de livres personnels" }, 403);
+      }
+    }
+
+    // Vérifier les permissions pour upload dans un groupe
     if (groupId) {
       // Check user's role within this specific group
       const membership = await db.query.groupMember.findFirst({
@@ -206,12 +230,7 @@ app.post("/api/upload/epub", async (c) => {
       }
     }
 
-    // Vérifier le quota de stockage
-    const [userData] = await db.select({ storageUsed: user.storageUsed, storageQuota: user.storageQuota })
-      .from(user)
-      .where(eq(user.id, session.user.id))
-      .limit(1);
-
+    // Vérifier le quota de stockage (userData already fetched above)
     if (userData) {
       const newTotal = (userData.storageUsed || 0) + file.size;
       if (newTotal > (userData.storageQuota || 500 * 1024 * 1024)) {
@@ -289,6 +308,7 @@ app.post("/api/upload/epub", async (c) => {
         mimeType: file.type,
         ownerId: session.user.id,
         groupId: groupId || null,
+        isPublic: isPublic === "true" ? "true" : "false",
       })
       .returning();
 
@@ -439,7 +459,8 @@ app.get("/api/files/:fileId", async (c) => {
 
     // Vérifier les permissions
     const isOwner = doc.ownerId === session.user.id;
-    let hasAccess = isOwner;
+    const isPublicBook = doc.isPublic === "true";
+    let hasAccess = isOwner || isPublicBook;
 
     if (!hasAccess && doc.groupId) {
       // Vérifier si l'utilisateur est membre du groupe
@@ -571,7 +592,8 @@ app.get("/api/cover/:fileId", async (c) => {
 
     // Vérifier les permissions
     const isOwner = doc.ownerId === session.user.id;
-    let hasAccess = isOwner;
+    const isPublicBook = doc.isPublic === "true";
+    let hasAccess = isOwner || isPublicBook;
 
     if (!hasAccess && doc.groupId) {
       const [membership] = await db
