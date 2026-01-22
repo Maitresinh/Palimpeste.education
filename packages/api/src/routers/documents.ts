@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
-import { db, document, readingProgress, groupMember, group, user, eq, and, or, isNull, desc, sql, ilike } from "@lectio/db";
+import { db, document, readingProgress, groupMember, group, user, eq, and, or, isNull, desc, sql, ilike, count } from "@lectio/db";
 import { protectedProcedure, adminProcedure, teacherProcedure, router } from "../index";
 
 export const documentsRouter = router({
@@ -227,8 +227,8 @@ export const documentsRouter = router({
       const fileSize = parseInt(book.filesize || "0", 10);
       try {
         await unlink(path.join(process.cwd(), book.filepath));
-      } catch (err) {
-        console.warn(`Failed to delete file ${book.filepath}:`, err);
+      } catch {
+        // Silently ignore file deletion errors - DB record will still be removed
       }
 
       await db.delete(document).where(eq(document.id, input.id));
@@ -305,8 +305,8 @@ export const documentsRouter = router({
       // Supprimer le fichier physique du disque
       try {
         await unlink(path.join(process.cwd(), book.filepath));
-      } catch (err) {
-        console.warn(`Failed to delete file ${book.filepath}:`, err);
+      } catch {
+        // Silently ignore file deletion errors - DB record will still be removed
       }
 
       // Supprimer le livre de la base de données
@@ -486,6 +486,12 @@ export const documentsRouter = router({
         );
       }
 
+      // Récupérer le nombre total de livres publics (avec les mêmes filtres)
+      const [countResult] = await db
+        .select({ count: count() })
+        .from(document)
+        .where(and(...conditions));
+
       const books = await db
         .select()
         .from(document)
@@ -494,7 +500,7 @@ export const documentsRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
-      return books;
+      return { books, totalCount: countResult?.count ?? 0 };
     }),
 
   // Ajouter un livre de la bibliothèque publique à un groupe

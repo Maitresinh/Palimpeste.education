@@ -56,9 +56,10 @@ export default function PublicLibraryPage() {
   const canManageLibrary = isAdmin || isTeacher;
 
   // Get public library books
-  const { data: books, isLoading, refetch } = useQuery(
+  const { data: libraryData, isLoading, refetch } = useQuery(
     trpc.documents.getPublicLibrary.queryOptions({ search: debouncedSearch || undefined })
   );
+  const books = libraryData?.books;
 
   // Get personal books for import (only for teachers/admins)
   const { data: myBooks } = useQuery({

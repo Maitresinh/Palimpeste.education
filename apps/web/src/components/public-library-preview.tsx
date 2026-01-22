@@ -16,10 +16,12 @@ export default function PublicLibraryPreview() {
   const queryClient = useQueryClient();
   const [claimingBookId, setClaimingBookId] = useState<string | null>(null);
 
-  // Récupérer les livres publics (limit to 3 for preview)
-  const { data: books, isLoading } = useQuery(
-    trpc.documents.getPublicLibrary.queryOptions({ limit: 3 })
+  // Récupérer les livres publics (limit to 6 for preview)
+  const { data, isLoading } = useQuery(
+    trpc.documents.getPublicLibrary.queryOptions({ limit: 6 })
   );
+  const books = data?.books;
+  const totalCount = data?.totalCount ?? 0;
 
   // Mutation for claiming a public book (creates personal copy)
   const claimBook = useMutation(
@@ -47,7 +49,7 @@ export default function PublicLibraryPreview() {
           <Skeleton className="h-4 w-24" />
         </div>
         <div className="grid grid-cols-3 gap-3">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Skeleton key={i} className="aspect-[2/3] w-full rounded-xl" />
           ))}
         </div>
@@ -59,7 +61,7 @@ export default function PublicLibraryPreview() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {books?.length || 0} livre{(books?.length || 0) > 1 ? "s" : ""} disponible{(books?.length || 0) > 1 ? "s" : ""}
+          {totalCount} livre{totalCount > 1 ? "s" : ""} disponible{totalCount > 1 ? "s" : ""}
         </p>
         <Button
           variant="ghost"

@@ -140,7 +140,7 @@ function validateFilePath(filepath: string, allowedDir: string): string | null {
 
   // Vérifier que le chemin résolu reste dans le dossier autorisé
   if (!resolvedPath.startsWith(uploadsDir + path.sep) && resolvedPath !== uploadsDir) {
-    console.warn(`[SECURITY] Path traversal attempt detected: ${filepath}`);
+    log.warn("Path traversal attempt detected", { attemptedPath: filepath });
     return null;
   }
 
@@ -149,7 +149,10 @@ function validateFilePath(filepath: string, allowedDir: string): string | null {
 
 const app = new Hono();
 
-app.use(logger());
+// Logger HTTP uniquement en développement
+if (!isProduction) {
+  app.use(logger());
+}
 app.use(
   "/*",
   cors({
@@ -291,7 +294,7 @@ app.post("/api/upload/epub", async (c) => {
         }
       }
     } catch (e) {
-      console.error("Error extracting metadata:", e);
+      log.warn("Error extracting metadata", { error: e instanceof Error ? e.message : String(e) });
       // Fallback to filename if extraction fails
     }
 
@@ -322,7 +325,7 @@ app.post("/api/upload/epub", async (c) => {
       document: newDocument,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    log.error("Upload error", error instanceof Error ? error : new Error(String(error)));
     return c.json({ error: "Upload failed" }, 500);
   }
 });
@@ -490,16 +493,14 @@ app.get("/api/files/:fileId", async (c) => {
       return c.json({ error: "Invalid file path" }, 400);
     }
 
-    console.log("Serving file:", filepath);
+    log.debug("Serving file", { fileId });
 
     // Lire le fichier
     const file = Bun.file(filepath);
     if (!(await file.exists())) {
-      console.log("File not found:", filepath);
+      log.warn("File not found on disk", { fileId });
       return c.json({ error: "File not found on disk" }, 404);
     }
-
-    console.log("File found, size:", file.size);
 
     // Retourner le fichier avec les bons headers
     return new Response(file, {
@@ -512,7 +513,7 @@ app.get("/api/files/:fileId", async (c) => {
       },
     });
   } catch (error) {
-    console.error("File serve error:", error);
+    log.error("File serve error", error instanceof Error ? error : new Error(String(error)), { fileId: c.req.param("fileId") });
     return c.json({ error: "Failed to serve file" }, 500);
   }
 });
