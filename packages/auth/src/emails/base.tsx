@@ -15,7 +15,12 @@ interface EmailLayoutProps {
   children: React.ReactNode;
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
+// Use CORS_ORIGIN or APP_URL on the server, NEXT_PUBLIC_APP_URL on the frontend
+const baseUrl =
+  process.env.CORS_ORIGIN ||
+  process.env.APP_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "http://localhost:3001";
 
 export const EmailLayout = ({ preview, children }: EmailLayoutProps) => (
   <Html>
